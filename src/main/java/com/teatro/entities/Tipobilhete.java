@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -26,9 +27,13 @@ public class Tipobilhete {
     @Column(name = "nome", nullable = false, length = 50)
     private String nome;
 
-    @ColumnDefault("0")
-    @Column(name = "percentagemdesconto", precision = 5, scale = 2)
-    private BigDecimal percentagemdesconto;
+    @NotNull
+    @Column(name = "percentagemdesconto", precision = 5, scale = 2, nullable = false)
+    private BigDecimal percentagemDesconto;
+
+    @OneToMany(mappedBy = "tipoBilhete")
+    @Builder.Default
+    private List<LugarBilhete> lugarBilhetes = new ArrayList<>();
 
 
 }

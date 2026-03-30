@@ -2,9 +2,10 @@ package com.teatro.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,25 +20,28 @@ public class Bilhete {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ColumnDefault("0")
     @Column(name = "precofinal", precision = 10, scale = 2)
-    private BigDecimal precofinal;
+    private BigDecimal precoFinal;
 
-    @ColumnDefault("'Reservado'")
-    @Column(name = "estado", columnDefinition = "estado_bilhete")
-    private Object estado;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_utilizador")
-    private Utilizador idUtilizador;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false)
+    private EstadoBilhete estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_sessao")
-    private Sessao idSessao;
+    @JoinColumn(name = "id_utilizador", nullable = false)
+    private Utilizador utilizador;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_sessao", nullable = false)
+    private Sessao sessao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pagamento")
-    private Pagamento idPagamento;
+    private Pagamento pagamento;
+
+    @OneToMany(mappedBy = "bilhete", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<LugarBilhete> lugarBilhetes = new ArrayList<>();
 
 
 }

@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -26,6 +29,14 @@ public class Sala {
     @NotNull
     @Column(name = "capacidade_total", nullable = false)
     private Integer capacidadeTotal;
+
+    @OneToMany(mappedBy = "sala")
+    @Builder.Default
+    private List<Zona> zonas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "sala")
+    @Builder.Default
+    private List<Sessao> sessoes = new ArrayList<>();
 
 
 }

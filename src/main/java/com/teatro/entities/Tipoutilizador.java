@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -22,6 +25,10 @@ public class Tipoutilizador {
     @NotNull
     @Column(name = "tipo", nullable = false, length = 50)
     private String tipo;
+
+    @OneToMany(mappedBy = "tipoUtilizador")
+    @Builder.Default
+    private List<Utilizador> utilizadores = new ArrayList<>();
 
 
 }

@@ -4,11 +4,12 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,14 +29,16 @@ public class Zona {
     @Column(name = "nome", nullable = false, length = 50)
     private String nome;
 
-    @ColumnDefault("0")
     @Column(name = "taxaadicional", precision = 10, scale = 2)
-    private BigDecimal taxaadicional;
+    private BigDecimal taxaAdicional;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "id_sala")
-    private Sala idSala;
+    @JoinColumn(name = "id_sala", nullable = false)
+    private Sala sala;
 
+    @OneToMany(mappedBy = "zona", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Lugar> lugares = new ArrayList<>();
 
 }

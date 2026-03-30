@@ -4,10 +4,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,15 +25,18 @@ public class Pagamento {
 
     @NotNull
     @Column(name = "valortotal", nullable = false, precision = 10, scale = 2)
-    private BigDecimal valortotal;
+    private BigDecimal valorTotal;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "datapagamento")
-    private Instant datapagamento;
+    private Instant dataPagamento;
 
     @Size(max = 50)
     @Column(name = "metodopagamento", length = 50)
-    private String metodopagamento;
+    private String metodoPagamento;
+
+    @OneToMany(mappedBy = "pagamento")
+    @Builder.Default
+    private List<Bilhete> bilhetes = new ArrayList<>();
 
 
 }

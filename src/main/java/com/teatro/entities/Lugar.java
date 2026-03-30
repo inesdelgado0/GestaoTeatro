@@ -7,6 +7,9 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -30,9 +33,12 @@ public class Lugar {
     private Integer numero;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "id_zona")
-    private Zona idZona;
+    @JoinColumn(name = "id_zona", nullable = false)
+    private Zona zona;
+
+    @OneToMany(mappedBy = "lugar")
+    @Builder.Default
+    private List<LugarBilhete> lugarBilhetes = new ArrayList<>();
 
 
 }
