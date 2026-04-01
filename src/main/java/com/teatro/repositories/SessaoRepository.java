@@ -15,6 +15,8 @@ public interface SessaoRepository extends JpaRepository<Sessao, Integer> {
     List<Sessao> findByEventoIdOrderByDataHoraAsc(Integer eventoId);
 
     List<Sessao> findBySalaIdAndDataHoraBetween(Integer salaId, Instant inicio, Instant fim);
+
+    boolean existsByEventoId(Integer eventoId);
 }
 
 //Procura todas as sessões de um determinado evento.
