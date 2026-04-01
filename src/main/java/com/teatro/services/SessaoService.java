@@ -1,5 +1,6 @@
 package com.teatro.services;
 
+import com.teatro.entities.EstadoSessao;
 import com.teatro.entities.Sessao;
 import com.teatro.repositories.SessaoRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,10 @@ public class SessaoService {
 
         if (sessao.getPrecoBase() == null) {
             throw new RuntimeException("A sessao tem de ter preco base definido.");
+        }
+
+        if (sessao.getEstado() == null) {
+            sessao.setEstado(EstadoSessao.Aberta);
         }
 
         Instant dataHora = sessao.getDataHora();
