@@ -12,6 +12,7 @@ public interface LugarRepository extends JpaRepository<Lugar, Integer> {
     List<Lugar> findByZonaId(Integer zonaId);
     List<Lugar> findByZonaIdOrderByFilaAscNumeroAsc(Integer zonaId);
     Optional<Lugar> findByZonaIdAndFilaAndNumero(Integer zonaId, String fila, Integer numero);
+    Optional<Lugar> findByZonaSalaIdAndFilaAndNumero(Integer salaId, String fila, Integer numero);
 
 }
 

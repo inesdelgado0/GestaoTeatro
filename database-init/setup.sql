@@ -84,3 +84,25 @@ CREATE TABLE Lugar_Bilhete (
     id_tipo_bilhete INTEGER NOT NULL REFERENCES TipoBilhete(id),
     UNIQUE (id_lugar, id_bilhete)
 );
+
+INSERT INTO TipoUtilizador (tipo) VALUES
+    ('Administrador'),
+    ('Cliente');
+
+INSERT INTO Utilizador (
+    nome,
+    email,
+    password,
+    telemovel,
+    morada,
+    nif,
+    id_tipo_utilizador
+) VALUES (
+    'Administrador Principal',
+    'admin@teatro.pt',
+    'admin123',
+    NULL,
+    NULL,
+    NULL,
+    1
+);

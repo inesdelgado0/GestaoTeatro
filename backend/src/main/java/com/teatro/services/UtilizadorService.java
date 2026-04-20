@@ -29,6 +29,31 @@ public class UtilizadorService {
         return utilizadorRepository.findByEmail(email);
     }
 
+    public Utilizador autenticarAdministrador(String email, String password) {
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("O email e obrigatorio.");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new RuntimeException("A password e obrigatoria.");
+        }
+
+        Utilizador utilizador = utilizadorRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Credenciais invalidas."));
+
+        if (!utilizador.getPassword().equals(password)) {
+            throw new RuntimeException("Credenciais invalidas.");
+        }
+
+        if (utilizador.getTipoUtilizador() == null
+                || utilizador.getTipoUtilizador().getTipo() == null
+                || !utilizador.getTipoUtilizador().getTipo().equalsIgnoreCase("Administrador")) {
+            throw new RuntimeException("O utilizador nao tem permissao administrativa.");
+        }
+
+        return utilizador;
+    }
+
     public Utilizador registarCliente(Utilizador utilizador) {
         if (utilizador.getNome() == null || utilizador.getNome().isBlank()) {
             throw new RuntimeException("O nome do utilizador e obrigatorio.");

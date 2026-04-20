@@ -1,23 +1,22 @@
 package com.teatro.desktop;
 
+import com.teatro.desktop.navigation.SceneManager;
+import com.teatro.desktop.service.AuthService;
 import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 public class DesktopApplication extends Application {
 
     @Override
     public void start(Stage stage) {
-        BorderPane root = new BorderPane();
-        root.setPadding(new Insets(24));
-        root.setCenter(new Label("Teatro Desktop - Estrutura inicial JavaFX"));
+        AuthService authService = new AuthService();
+        SceneManager sceneManager = new SceneManager(stage, authService);
 
-        Scene scene = new Scene(root, 1200, 800);
         stage.setTitle("Teatro Desktop");
-        stage.setScene(scene);
+        stage.setMinWidth(1100);
+        stage.setMinHeight(700);
+
+        sceneManager.showLogin();
         stage.show();
     }
 
