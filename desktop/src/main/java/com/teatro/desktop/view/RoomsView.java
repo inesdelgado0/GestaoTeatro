@@ -31,16 +31,17 @@ public class RoomsView {
 
     public RoomsView(SceneManager sceneManager, AuthService authService, String userEmail) {
         this.tableView = new TableView<>();
-        this.salaApiService = new SalaApiService();
+        this.salaApiService = new SalaApiService(authService);
         this.feedbackLabel = new Label();
         this.userEmail = userEmail;
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
+                authService,
                 userEmail,
                 AdminLayout.SECTION_ROOMS,
-                "Gestao de Salas",
-                "Configuracao da infraestrutura e capacidade das salas",
+                "Gest\u00e3o de Salas",
+                "Configura\u00e7\u00e3o da infraestrutura e capacidade das salas",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -50,7 +51,9 @@ public class RoomsView {
 
     private Parent buildContent() {
         setupTable();
-        VBox tableCard = new VBox(12, new Label("Salas registadas"), tableView);
+        Label tableTitleLabel = new Label("Salas registadas");
+        tableTitleLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #f3f4f6;");
+        VBox tableCard = new VBox(12, tableTitleLabel, tableView);
         VBox.setVgrow(tableView, Priority.ALWAYS);
         tableCard.setPadding(new Insets(20));
         tableCard.setStyle(
@@ -83,6 +86,7 @@ public class RoomsView {
         capacidadeColumn.setPrefWidth(140);
 
         tableView.getColumns().setAll(idColumn, nomeColumn, capacidadeColumn);
+        tableView.setPlaceholder(new Label("Sem dados disponíveis."));
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
     }
 
@@ -120,7 +124,7 @@ public class RoomsView {
                 capacidadeField.clear();
                 carregarSalas();
             } catch (NumberFormatException e) {
-                feedbackLabel.setText("A capacidade tem de ser numerica.");
+                feedbackLabel.setText("A capacidade tem de ser numérica.");
             } catch (RuntimeException e) {
                 feedbackLabel.setText(e.getMessage());
             }

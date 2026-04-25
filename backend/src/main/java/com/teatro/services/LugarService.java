@@ -2,6 +2,7 @@ package com.teatro.services;
 
 import com.teatro.entities.Lugar;
 import com.teatro.entities.Zona;
+import com.teatro.repositories.LugarBilheteRepository;
 import com.teatro.repositories.LugarRepository;
 import com.teatro.repositories.ZonaRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class LugarService {
 
     private final LugarRepository lugarRepository;
     private final ZonaRepository zonaRepository;
+    private final LugarBilheteRepository lugarBilheteRepository;
 
     public List<Lugar> listarTodos() {
         return lugarRepository.findAll();
@@ -30,6 +32,37 @@ public class LugarService {
     }
 
     public Lugar criarLugar(Lugar lugar) {
+        Zona zona = validarLugar(lugar, null);
+        lugar.setZona(zona);
+        return lugarRepository.save(lugar);
+    }
+
+    public Lugar atualizarLugar(Integer id, Lugar lugarAtualizado) {
+        Lugar lugarExistente = lugarRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lugar nao encontrado."));
+
+        Zona zona = validarLugar(lugarAtualizado, id);
+
+        lugarExistente.setFila(lugarAtualizado.getFila());
+        lugarExistente.setNumero(lugarAtualizado.getNumero());
+        lugarExistente.setZona(zona);
+
+        return lugarRepository.save(lugarExistente);
+    }
+
+    public void eliminarLugar(Integer id) {
+        if (!lugarRepository.existsById(id)) {
+            throw new RuntimeException("Nao e possivel apagar: lugar nao encontrado.");
+        }
+
+        if (lugarBilheteRepository.existsByLugarId(id)) {
+            throw new RuntimeException("Nao e possivel apagar o lugar porque existem bilhetes associados.");
+        }
+
+        lugarRepository.deleteById(id);
+    }
+
+    private Zona validarLugar(Lugar lugar, Integer lugarIdIgnorado) {
         if (lugar.getZona() == null) {
             throw new RuntimeException("O lugar tem de estar associado a uma zona.");
         }
@@ -57,11 +90,10 @@ public class LugarService {
                 zona.getSala().getId(),
                 lugar.getFila(),
                 lugar.getNumero()
-        ).isPresent()) {
+        ).filter(lugarExistente -> !lugarExistente.getId().equals(lugarIdIgnorado)).isPresent()) {
             throw new RuntimeException("Ja existe um lugar com essa fila e numero nessa sala.");
         }
 
-        lugar.setZona(zona);
-        return lugarRepository.save(lugar);
+        return zona;
     }
 }

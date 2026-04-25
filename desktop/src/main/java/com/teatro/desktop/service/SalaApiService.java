@@ -16,17 +16,20 @@ public class SalaApiService {
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final AuthService authService;
 
-    public SalaApiService() {
+    public SalaApiService(AuthService authService) {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+        this.authService = authService;
     }
 
     public List<SalaModel> listarSalas() {
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(ApiConfig.BASE_URL + "/salas"))
-                .GET()
-                .build();
+                .GET();
+        authService.applyAuthentication(requestBuilder);
+        HttpRequest request = requestBuilder.build();
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -34,7 +37,7 @@ public class SalaApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw new RuntimeException("Nao foi possivel obter as salas. HTTP " + response.statusCode());
+            throw ApiErrorHandler.buildException("Nao foi possivel obter as salas.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);
@@ -45,17 +48,18 @@ public class SalaApiService {
         try {
             String json = objectMapper.writeValueAsString(sala);
 
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(ApiConfig.BASE_URL + "/salas"))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), SalaModel.class);
             }
-            throw new RuntimeException("Nao foi possivel criar a sala. HTTP " + response.statusCode());
+            throw ApiErrorHandler.buildException("Nao foi possivel criar a sala.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);

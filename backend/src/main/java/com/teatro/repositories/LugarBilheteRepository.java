@@ -17,6 +17,9 @@ public interface LugarBilheteRepository extends JpaRepository<LugarBilhete, Inte
               and lb.bilhete.sessao.id = :sessaoId
             """)
     boolean existsByLugarIdAndSessaoId(@Param("lugarId") Integer lugarId, @Param("sessaoId") Integer sessaoId);
+
+    boolean existsByLugarId(Integer lugarId);
+    boolean existsByTipoBilheteId(Integer tipoBilheteId);
 }
 
 // Verifica se um determinado lugar já está associado a um bilhete

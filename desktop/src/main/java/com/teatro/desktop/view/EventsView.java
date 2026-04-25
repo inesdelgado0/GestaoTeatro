@@ -29,19 +29,32 @@ public class EventsView {
     private final EventoApiService eventoApiService;
     private final Label feedbackLabel;
     private final String userEmail;
+    private EventoModel selectedEvento;
+
+    private TextField tituloField;
+    private TextField generoField;
+    private TextField duracaoField;
+    private TextField classificacaoField;
+    private TextArea descricaoArea;
+    private Label formTitleLabel;
+    private Button saveButton;
+    private Button deleteButton;
+    private Button clearButton;
 
     public EventsView(SceneManager sceneManager, AuthService authService, String userEmail) {
         this.tableView = new TableView<>();
-        this.eventoApiService = new EventoApiService();
+        this.eventoApiService = new EventoApiService(authService);
         this.feedbackLabel = new Label();
         this.userEmail = userEmail;
+        this.selectedEvento = null;
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
+                authService,
                 userEmail,
                 AdminLayout.SECTION_EVENTS,
-                "Gestao de Eventos",
-                "Criacao e consulta de eventos disponiveis no catalogo",
+                "Gest\u00e3o de Eventos",
+                "Cria\u00e7\u00e3o e consulta de eventos dispon\u00edveis no cat\u00e1logo",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -51,7 +64,9 @@ public class EventsView {
 
     private Parent buildContent() {
         setupTable();
-        VBox tableCard = new VBox(12, new Label("Catalogo de eventos"), tableView);
+        Label tableTitleLabel = new Label("Cat\u00e1logo de eventos");
+        tableTitleLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #f3f4f6;");
+        VBox tableCard = new VBox(12, tableTitleLabel, tableView);
         VBox.setVgrow(tableView, Priority.ALWAYS);
         tableCard.setPadding(new Insets(20));
         tableCard.setStyle(
@@ -73,64 +88,83 @@ public class EventsView {
         idColumn.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().id()));
         idColumn.setPrefWidth(60);
 
-        TableColumn<EventoModel, String> tituloColumn = new TableColumn<>("Titulo");
+        TableColumn<EventoModel, String> tituloColumn = new TableColumn<>("T\u00edtulo");
         tituloColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().titulo()));
         tituloColumn.setPrefWidth(220);
 
-        TableColumn<EventoModel, String> generoColumn = new TableColumn<>("Genero");
+        TableColumn<EventoModel, String> generoColumn = new TableColumn<>("Género");
         generoColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().genero()));
         generoColumn.setPrefWidth(140);
 
-        TableColumn<EventoModel, Number> duracaoColumn = new TableColumn<>("Duracao");
+        TableColumn<EventoModel, Number> duracaoColumn = new TableColumn<>("Duração");
         duracaoColumn.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().duracaoMin() != null ? data.getValue().duracaoMin() : 0));
         duracaoColumn.setPrefWidth(100);
 
-        TableColumn<EventoModel, String> classificacaoColumn = new TableColumn<>("Classificacao");
+        TableColumn<EventoModel, String> classificacaoColumn = new TableColumn<>("Classificação");
         classificacaoColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().classificacaoEtaria()));
         classificacaoColumn.setPrefWidth(140);
 
         tableView.getColumns().setAll(idColumn, tituloColumn, generoColumn, duracaoColumn, classificacaoColumn);
+        tableView.setPlaceholder(new Label("Sem dados disponíveis."));
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> preencherFormulario(newValue));
     }
 
     private VBox buildEventForm() {
-        Label title = new Label("Criar Evento");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        formTitleLabel = new Label("Criar Evento");
+        formTitleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        TextField tituloField = new TextField();
-        tituloField.setPromptText("Titulo");
+        tituloField = new TextField();
+        tituloField.setPromptText("Título");
 
-        TextField generoField = new TextField();
-        generoField.setPromptText("Genero");
+        generoField = new TextField();
+        generoField.setPromptText("Género");
 
-        TextField duracaoField = new TextField();
-        duracaoField.setPromptText("Duracao (min)");
+        duracaoField = new TextField();
+        duracaoField.setPromptText("Duração (min)");
 
-        TextField classificacaoField = new TextField();
-        classificacaoField.setPromptText("Classificacao etaria");
+        classificacaoField = new TextField();
+        classificacaoField.setPromptText("Classificação etária");
 
-        TextArea descricaoArea = new TextArea();
-        descricaoArea.setPromptText("Descricao");
+        descricaoArea = new TextArea();
+        descricaoArea.setPromptText("Descrição");
         descricaoArea.setPrefRowCount(5);
 
         feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 12px;");
 
-        Button createButton = new Button("Guardar evento");
-        createButton.setStyle(
+        saveButton = new Button("Guardar evento");
+        saveButton.setStyle(
                 "-fx-background-color: #6f2232; " +
                         "-fx-text-fill: white; " +
                         "-fx-font-weight: bold; " +
                         "-fx-padding: 10 18 10 18;"
         );
 
-        createButton.setOnAction(event -> {
+        deleteButton = new Button("Remover evento");
+        deleteButton.setDisable(true);
+        deleteButton.setStyle(
+                "-fx-background-color: #383838; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 10 18 10 18;"
+        );
+
+        clearButton = new Button("Limpar seleção");
+        clearButton.setStyle(
+                "-fx-background-color: #1f1f1f; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 10 18 10 18;"
+        );
+
+        saveButton.setOnAction(event -> {
             try {
                 Integer duracao = duracaoField.getText() == null || duracaoField.getText().isBlank()
                         ? null
                         : Integer.parseInt(duracaoField.getText());
 
-                EventoModel novoEvento = new EventoModel(
-                        null,
+                EventoModel eventoFormulario = new EventoModel(
+                        selectedEvento != null ? selectedEvento.id() : null,
                         tituloField.getText(),
                         descricaoArea.getText(),
                         duracao,
@@ -138,36 +172,60 @@ public class EventsView {
                         generoField.getText()
                 );
 
-                eventoApiService.criarEvento(novoEvento);
-                feedbackLabel.setText("Evento criado com sucesso.");
-                tituloField.clear();
-                generoField.clear();
-                duracaoField.clear();
-                classificacaoField.clear();
-                descricaoArea.clear();
+                if (selectedEvento == null) {
+                    eventoApiService.criarEvento(eventoFormulario);
+                    feedbackLabel.setText("Evento criado com sucesso.");
+                } else {
+                    eventoApiService.atualizarEvento(eventoFormulario);
+                    feedbackLabel.setText("Evento atualizado com sucesso.");
+                }
+
+                limparFormulario();
                 carregarEventos();
             } catch (NumberFormatException e) {
-                feedbackLabel.setText("A duracao tem de ser numerica.");
+                feedbackLabel.setText("A duração tem de ser numérica.");
             } catch (RuntimeException e) {
                 feedbackLabel.setText(e.getMessage());
             }
         });
 
+        deleteButton.setOnAction(event -> {
+            if (selectedEvento == null) {
+                feedbackLabel.setText("Selecione um evento para remover.");
+                return;
+            }
+
+            try {
+                eventoApiService.eliminarEvento(selectedEvento.id());
+                feedbackLabel.setText("Evento removido com sucesso.");
+                limparFormulario();
+                carregarEventos();
+            } catch (RuntimeException e) {
+                feedbackLabel.setText(e.getMessage());
+            }
+        });
+
+        clearButton.setOnAction(event -> {
+            limparFormulario();
+            feedbackLabel.setText("");
+        });
+
         GridPane form = new GridPane();
         form.setVgap(10);
         form.setHgap(10);
-        form.add(createFormLabel("Titulo"), 0, 0);
+        form.add(createFormLabel("Título"), 0, 0);
         form.add(tituloField, 0, 1);
-        form.add(createFormLabel("Genero"), 0, 2);
+        form.add(createFormLabel("Género"), 0, 2);
         form.add(generoField, 0, 3);
-        form.add(createFormLabel("Duracao"), 0, 4);
+        form.add(createFormLabel("Duração"), 0, 4);
         form.add(duracaoField, 0, 5);
-        form.add(createFormLabel("Classificacao"), 0, 6);
+        form.add(createFormLabel("Classificação"), 0, 6);
         form.add(classificacaoField, 0, 7);
         form.add(createFormLabel("Descricao"), 0, 8);
         form.add(descricaoArea, 0, 9);
 
-        VBox formCard = new VBox(14, title, form, createButton, feedbackLabel);
+        HBox actions = new HBox(10, saveButton, deleteButton);
+        VBox formCard = new VBox(14, formTitleLabel, form, actions, clearButton, feedbackLabel);
         formCard.setPadding(new Insets(20));
         formCard.setStyle(
                 "-fx-background-color: #2c2c2c; -fx-background-radius: 16; " +
@@ -189,6 +247,39 @@ public class EventsView {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: #cfcfcf;");
         return label;
+    }
+
+    private void preencherFormulario(EventoModel evento) {
+        selectedEvento = evento;
+
+        if (evento == null) {
+            formTitleLabel.setText("Criar Evento");
+            saveButton.setText("Guardar evento");
+            deleteButton.setDisable(true);
+            return;
+        }
+
+        formTitleLabel.setText("Editar Evento");
+        saveButton.setText("Atualizar evento");
+        deleteButton.setDisable(false);
+        tituloField.setText(evento.titulo());
+        generoField.setText(evento.genero());
+        duracaoField.setText(evento.duracaoMin() != null ? String.valueOf(evento.duracaoMin()) : "");
+        classificacaoField.setText(evento.classificacaoEtaria());
+        descricaoArea.setText(evento.descricao());
+    }
+
+    private void limparFormulario() {
+        selectedEvento = null;
+        tableView.getSelectionModel().clearSelection();
+        tituloField.clear();
+        generoField.clear();
+        duracaoField.clear();
+        classificacaoField.clear();
+        descricaoArea.clear();
+        formTitleLabel.setText("Criar Evento");
+        saveButton.setText("Guardar evento");
+        deleteButton.setDisable(true);
     }
 
     public Parent getRoot() {

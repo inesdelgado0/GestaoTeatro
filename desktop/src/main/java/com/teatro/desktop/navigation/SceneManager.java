@@ -6,8 +6,11 @@ import com.teatro.desktop.view.RoomsView;
 import com.teatro.desktop.view.SessionsView;
 import com.teatro.desktop.view.DashboardView;
 import com.teatro.desktop.view.LoginView;
+import com.teatro.desktop.view.PricingView;
 import com.teatro.desktop.view.ReportsView;
 import com.teatro.desktop.view.ZonesView;
+import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -26,36 +29,64 @@ public class SceneManager {
 
     public void showLogin() {
         LoginView loginView = new LoginView(this, authService);
-        stage.setScene(new Scene(loginView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(loginView.getRoot());
     }
 
     public void showDashboard(String userEmail) {
         DashboardView dashboardView = new DashboardView(this, authService, userEmail);
-        stage.setScene(new Scene(dashboardView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(dashboardView.getRoot());
     }
 
     public void showEvents(String userEmail) {
         EventsView eventsView = new EventsView(this, authService, userEmail);
-        stage.setScene(new Scene(eventsView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(eventsView.getRoot());
     }
 
     public void showSessions(String userEmail) {
         SessionsView sessionsView = new SessionsView(this, authService, userEmail);
-        stage.setScene(new Scene(sessionsView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(sessionsView.getRoot());
     }
 
     public void showRooms(String userEmail) {
         RoomsView roomsView = new RoomsView(this, authService, userEmail);
-        stage.setScene(new Scene(roomsView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(roomsView.getRoot());
     }
 
     public void showZones(String userEmail) {
         ZonesView zonesView = new ZonesView(this, authService, userEmail);
-        stage.setScene(new Scene(zonesView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(zonesView.getRoot());
+    }
+
+    public void showPricing(String userEmail) {
+        PricingView pricingView = new PricingView(this, authService, userEmail);
+        applyScene(pricingView.getRoot());
     }
 
     public void showReports(String userEmail) {
         ReportsView reportsView = new ReportsView(this, authService, userEmail);
-        stage.setScene(new Scene(reportsView.getRoot(), DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        applyScene(reportsView.getRoot());
+    }
+
+    private void applyScene(Parent root) {
+        boolean wasFullScreen = stage.isFullScreen();
+        boolean wasMaximized = stage.isMaximized();
+
+        Scene currentScene = stage.getScene();
+        Scene nextScene;
+
+        if (currentScene == null) {
+            nextScene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        } else {
+            nextScene = new Scene(root, currentScene.getWidth(), currentScene.getHeight());
+        }
+
+        stage.setScene(nextScene);
+
+        if (wasMaximized) {
+            stage.setMaximized(true);
+        }
+        if (wasFullScreen) {
+            Platform.runLater(() -> stage.setFullScreen(true));
+        }
     }
 }

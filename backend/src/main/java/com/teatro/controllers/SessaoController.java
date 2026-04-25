@@ -54,6 +54,25 @@ public class SessaoController {
         return ResponseEntity.ok(toResponseDto(sessaoService.criarSessao(sessao)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<SessaoResponseDto> update(@PathVariable Integer id, @RequestBody SessaoRequestDto request) {
+        Sessao sessao = Sessao.builder()
+                .dataHora(request.dataHora())
+                .precoBase(request.precoBase())
+                .estado(request.estado())
+                .evento(request.eventoId() != null ? Evento.builder().id(request.eventoId()).build() : null)
+                .sala(request.salaId() != null ? Sala.builder().id(request.salaId()).build() : null)
+                .build();
+
+        return ResponseEntity.ok(toResponseDto(sessaoService.atualizarSessao(id, sessao)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        sessaoService.eliminarSessao(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private SessaoResponseDto toResponseDto(Sessao sessao) {
         return new SessaoResponseDto(
                 sessao.getId(),

@@ -9,12 +9,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class AuthService {
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private String lastErrorMessage;
+    private String authorizationHeader;
+    private AuthLoginResponse authenticatedUser;
 
     public AuthService() {
         this.httpClient = HttpClient.newHttpClient();
@@ -33,7 +37,8 @@ public class AuthService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                objectMapper.readValue(response.body(), AuthLoginResponse.class);
+                authenticatedUser = objectMapper.readValue(response.body(), AuthLoginResponse.class);
+                authorizationHeader = buildBasicAuthorizationHeader(email, password);
                 lastErrorMessage = null;
                 return true;
             }
@@ -49,6 +54,28 @@ public class AuthService {
 
     public String getLastErrorMessage() {
         return lastErrorMessage;
+    }
+
+    public void applyAuthentication(HttpRequest.Builder requestBuilder) {
+        if (authorizationHeader != null && !authorizationHeader.isBlank()) {
+            requestBuilder.header("Authorization", authorizationHeader);
+        }
+    }
+
+    public void logout() {
+        authorizationHeader = null;
+        authenticatedUser = null;
+        lastErrorMessage = null;
+    }
+
+    public AuthLoginResponse getAuthenticatedUser() {
+        return authenticatedUser;
+    }
+
+    private String buildBasicAuthorizationHeader(String email, String password) {
+        String credentials = email + ":" + password;
+        String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + encoded;
     }
 
     private record LoginPayload(String email, String password) {

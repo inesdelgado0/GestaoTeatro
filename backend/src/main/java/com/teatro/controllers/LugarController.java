@@ -51,6 +51,23 @@ public class LugarController {
         return ResponseEntity.ok(toResponseDto(lugarService.criarLugar(lugar)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<LugarResponseDto> update(@PathVariable Integer id, @RequestBody LugarRequestDto request) {
+        Lugar lugar = Lugar.builder()
+                .fila(request.fila())
+                .numero(request.numero())
+                .zona(request.zonaId() != null ? Zona.builder().id(request.zonaId()).build() : null)
+                .build();
+
+        return ResponseEntity.ok(toResponseDto(lugarService.atualizarLugar(id, lugar)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        lugarService.eliminarLugar(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private LugarResponseDto toResponseDto(Lugar lugar) {
         return new LugarResponseDto(
                 lugar.getId(),

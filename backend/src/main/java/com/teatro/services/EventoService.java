@@ -44,6 +44,29 @@ public class EventoService {
         return eventoRepository.save(evento);
     }
 
+    public Evento atualizarEvento(Integer id, Evento eventoAtualizado) {
+        Evento eventoExistente = eventoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Evento nao encontrado."));
+
+        if (eventoAtualizado.getTitulo() == null || eventoAtualizado.getTitulo().isBlank()) {
+            throw new RuntimeException("O titulo do evento nao pode estar vazio.");
+        }
+
+        eventoRepository.findByTitulo(eventoAtualizado.getTitulo())
+                .filter(outroEvento -> !outroEvento.getId().equals(id))
+                .ifPresent(outroEvento -> {
+                    throw new RuntimeException("Ja existe um evento com esse titulo.");
+                });
+
+        eventoExistente.setTitulo(eventoAtualizado.getTitulo());
+        eventoExistente.setDescricao(eventoAtualizado.getDescricao());
+        eventoExistente.setDuracaoMin(eventoAtualizado.getDuracaoMin());
+        eventoExistente.setClassificacaoEtaria(eventoAtualizado.getClassificacaoEtaria());
+        eventoExistente.setGenero(eventoAtualizado.getGenero());
+
+        return eventoRepository.save(eventoExistente);
+    }
+
     public void eliminarEvento(Integer id) {
         if (!eventoRepository.existsById(id)) {
             throw new RuntimeException("Nao e possivel apagar: evento nao encontrado.");

@@ -1,20 +1,21 @@
 package com.teatro.desktop.view;
 
-import com.teatro.desktop.model.LugarModel;
-import com.teatro.desktop.model.SalaModel;
-import com.teatro.desktop.model.SessaoModel;
-import com.teatro.desktop.model.EventoModel;
+import com.teatro.desktop.model.RelatorioOcupacaoItemModel;
+import com.teatro.desktop.model.RelatorioOcupacaoModel;
+import com.teatro.desktop.model.RelatorioVendasItemModel;
+import com.teatro.desktop.model.RelatorioVendasModel;
 import com.teatro.desktop.navigation.SceneManager;
 import com.teatro.desktop.service.AuthService;
-import com.teatro.desktop.service.EventoApiService;
-import com.teatro.desktop.service.LugarApiService;
-import com.teatro.desktop.service.SalaApiService;
-import com.teatro.desktop.service.SessaoApiService;
+import com.teatro.desktop.service.RelatorioApiService;
 import com.teatro.desktop.view.layout.AdminLayout;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -23,74 +24,188 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-import java.util.Comparator;
-import java.util.List;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 public class ReportsView {
 
     private final Parent root;
-    private final EventoApiService eventoApiService;
-    private final SessaoApiService sessaoApiService;
-    private final SalaApiService salaApiService;
-    private final LugarApiService lugarApiService;
+    private final RelatorioApiService relatorioApiService;
     private final Label feedbackLabel;
+    private final Label totalFaturadoLabel;
+    private final Label totalBilhetesLabel;
+    private final Label taxaMediaLabel;
+    private final DatePicker inicioPicker;
+    private final DatePicker fimPicker;
+    private final TableView<RelatorioVendasItemModel> vendasTable;
+    private final TableView<RelatorioOcupacaoItemModel> ocupacaoTable;
 
     public ReportsView(SceneManager sceneManager, AuthService authService, String userEmail) {
-        this.eventoApiService = new EventoApiService();
-        this.sessaoApiService = new SessaoApiService();
-        this.salaApiService = new SalaApiService();
-        this.lugarApiService = new LugarApiService();
+        this.relatorioApiService = new RelatorioApiService(authService);
         this.feedbackLabel = new Label();
+        this.totalFaturadoLabel = createMetricValue();
+        this.totalBilhetesLabel = createMetricValue();
+        this.taxaMediaLabel = createMetricValue();
+        this.inicioPicker = new DatePicker(LocalDate.now().minusMonths(1));
+        this.fimPicker = new DatePicker(LocalDate.now());
+        this.vendasTable = new TableView<>();
+        this.ocupacaoTable = new TableView<>();
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
+                authService,
                 userEmail,
                 AdminLayout.SECTION_REPORTS,
-                "Relatorios",
-                "Indicadores gerais da operacao administrativa",
+                "Relat\u00f3rios",
+                "Vendas por per\u00edodo e taxa de ocupa\u00e7\u00e3o das sess\u00f5es",
                 buildContent()
         );
         this.root = layout.getRoot();
+
+        carregarRelatorios();
     }
 
     private Parent buildContent() {
         VBox wrapper = new VBox(18);
         wrapper.setPadding(new Insets(18, 28, 28, 28));
 
-        try {
-            List<EventoModel> eventos = eventoApiService.listarEventos();
-            List<SessaoModel> sessoes = sessaoApiService.listarSessoes();
-            List<SalaModel> salas = salaApiService.listarSalas();
-            List<LugarModel> lugares = lugarApiService.listarTodos();
+        feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 13px;");
 
-            GridPane metrics = new GridPane();
-            metrics.setHgap(18);
-            metrics.setVgap(18);
-            metrics.add(createMetricCard("Eventos", String.valueOf(eventos.size()), "Catalogo atualmente registado", "#3f8cff"), 0, 0);
-            metrics.add(createMetricCard("Sessoes", String.valueOf(sessoes.size()), "Agendamentos registados", "#8e5cf6"), 1, 0);
-            metrics.add(createMetricCard("Salas", String.valueOf(salas.size()), "Infraestrutura ativa", "#29c58c"), 2, 0);
-            metrics.add(createMetricCard("Lugares", String.valueOf(lugares.size()), "Mapa total de lugares", "#ff9f43"), 3, 0);
+        HBox filtros = buildFiltros();
+        GridPane metricas = buildMetricas();
+        HBox tabelas = new HBox(18, buildVendasPanel(), buildOcupacaoPanel());
+        HBox.setHgrow(tabelas.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(tabelas.getChildren().get(1), Priority.ALWAYS);
 
-            HBox lowerPanels = new HBox(18, createTopEventsPanel(eventos, sessoes), createRoomsTablePanel(salas, sessoes));
-            HBox.setHgrow(lowerPanels.getChildren().get(0), Priority.ALWAYS);
-            HBox.setHgrow(lowerPanels.getChildren().get(1), Priority.ALWAYS);
-
-            wrapper.getChildren().addAll(metrics, lowerPanels);
-        } catch (RuntimeException e) {
-            feedbackLabel.setText(e.getMessage());
-            feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 13px;");
-            wrapper.getChildren().add(feedbackLabel);
-        }
-
+        wrapper.getChildren().addAll(filtros, metricas, tabelas, feedbackLabel);
         return wrapper;
     }
 
-    private VBox createMetricCard(String title, String value, String description, String accentColor) {
+    private HBox buildFiltros() {
+        inicioPicker.setPromptText("Data inicial");
+        fimPicker.setPromptText("Data final");
+        inicioPicker.setPrefWidth(150);
+        fimPicker.setPrefWidth(150);
+
+        Button aplicarButton = new Button("Aplicar período");
+        aplicarButton.setStyle(
+                "-fx-background-color: linear-gradient(to right, #6ea8ff, #4e8fe8); " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-background-radius: 12; " +
+                        "-fx-padding: 11 18 11 18;"
+        );
+        aplicarButton.setOnAction(event -> carregarRelatorios());
+
+        VBox inicioBox = new VBox(6, createFieldLabel("Início"), inicioPicker);
+        VBox fimBox = new VBox(6, createFieldLabel("Fim"), fimPicker);
+        HBox filtros = new HBox(12, inicioBox, fimBox, aplicarButton);
+        filtros.setAlignment(Pos.BOTTOM_LEFT);
+        filtros.setPadding(new Insets(20));
+        filtros.setStyle(
+                "-fx-background-color: #2c2c2c; " +
+                        "-fx-background-radius: 16; " +
+                        "-fx-border-color: #333333; " +
+                        "-fx-border-radius: 16;"
+        );
+        return filtros;
+    }
+
+    private GridPane buildMetricas() {
+        GridPane metrics = new GridPane();
+        metrics.setHgap(18);
+        metrics.setVgap(18);
+        metrics.add(createMetricCard("Faturação", totalFaturadoLabel, "Total pago no período", "#6ea8ff"), 0, 0);
+        metrics.add(createMetricCard("Bilhetes Pagos", totalBilhetesLabel, "Bilhetes vendidos no período", "#29c58c"), 1, 0);
+        metrics.add(createMetricCard("Taxa Média", taxaMediaLabel, "Ocupação média das sessões", "#ff9f43"), 2, 0);
+        return metrics;
+    }
+
+    private VBox buildVendasPanel() {
+        TableColumn<RelatorioVendasItemModel, String> eventoColumn = new TableColumn<>("Evento");
+        eventoColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().eventoTitulo()));
+
+        TableColumn<RelatorioVendasItemModel, String> salaColumn = new TableColumn<>("Sala");
+        salaColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().salaNome()));
+
+        TableColumn<RelatorioVendasItemModel, Number> bilhetesColumn = new TableColumn<>("Bilhetes");
+        bilhetesColumn.setCellValueFactory(data -> new SimpleLongProperty(data.getValue().totalBilhetes()));
+
+        TableColumn<RelatorioVendasItemModel, String> totalColumn = new TableColumn<>("Faturado");
+        totalColumn.setCellValueFactory(data -> new SimpleStringProperty(formatCurrency(data.getValue().totalFaturado())));
+
+        vendasTable.getColumns().setAll(eventoColumn, salaColumn, bilhetesColumn, totalColumn);
+        vendasTable.setPlaceholder(new Label("Sem dados disponíveis."));
+        vendasTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        VBox panel = new VBox(16, createSectionTitle("Vendas por Sessão"), vendasTable);
+        VBox.setVgrow(vendasTable, Priority.ALWAYS);
+        panel.setPadding(new Insets(22));
+        panel.setStyle(
+                "-fx-background-color: #2c2c2c; " +
+                        "-fx-background-radius: 16; " +
+                        "-fx-border-color: #333333; " +
+                        "-fx-border-radius: 16;"
+        );
+        return panel;
+    }
+
+    private VBox buildOcupacaoPanel() {
+        TableColumn<RelatorioOcupacaoItemModel, String> eventoColumn = new TableColumn<>("Evento");
+        eventoColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().eventoTitulo()));
+
+        TableColumn<RelatorioOcupacaoItemModel, Number> capacidadeColumn = new TableColumn<>("Capacidade");
+        capacidadeColumn.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().capacidadeSala()));
+
+        TableColumn<RelatorioOcupacaoItemModel, Number> ocupadosColumn = new TableColumn<>("Ocupados");
+        ocupadosColumn.setCellValueFactory(data -> new SimpleLongProperty(data.getValue().lugaresOcupados()));
+
+        TableColumn<RelatorioOcupacaoItemModel, String> taxaColumn = new TableColumn<>("Taxa");
+        taxaColumn.setCellValueFactory(data -> new SimpleStringProperty(
+                data.getValue().taxaOcupacao() != null ? data.getValue().taxaOcupacao() + "%" : "0%"
+        ));
+
+        ocupacaoTable.getColumns().setAll(eventoColumn, capacidadeColumn, ocupadosColumn, taxaColumn);
+        ocupacaoTable.setPlaceholder(new Label("Sem dados disponíveis."));
+        ocupacaoTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        VBox panel = new VBox(16, createSectionTitle("Ocupação por Sessão"), ocupacaoTable);
+        VBox.setVgrow(ocupacaoTable, Priority.ALWAYS);
+        panel.setPadding(new Insets(22));
+        panel.setStyle(
+                "-fx-background-color: #2c2c2c; " +
+                        "-fx-background-radius: 16; " +
+                        "-fx-border-color: #333333; " +
+                        "-fx-border-radius: 16;"
+        );
+        return panel;
+    }
+
+    private void carregarRelatorios() {
+        try {
+            feedbackLabel.setText("");
+            Instant inicio = toStartOfDay(inicioPicker.getValue());
+            Instant fim = toEndOfDay(fimPicker.getValue());
+
+            RelatorioVendasModel relatorioVendas = relatorioApiService.obterRelatorioVendas(inicio, fim);
+            RelatorioOcupacaoModel relatorioOcupacao = relatorioApiService.obterRelatorioOcupacao(inicio, fim);
+
+            totalFaturadoLabel.setText(formatCurrency(relatorioVendas.totalFaturado()));
+            totalBilhetesLabel.setText(String.valueOf(relatorioVendas.totalBilhetes()));
+            taxaMediaLabel.setText((relatorioOcupacao.taxaMediaOcupacao() != null ? relatorioOcupacao.taxaMediaOcupacao() : BigDecimal.ZERO) + "%");
+
+            vendasTable.getItems().setAll(relatorioVendas.itens());
+            ocupacaoTable.getItems().setAll(relatorioOcupacao.itens());
+        } catch (RuntimeException e) {
+            feedbackLabel.setText(e.getMessage());
+        }
+    }
+
+    private VBox createMetricCard(String title, Label valueLabel, String description, String accentColor) {
         Label titleLabel = new Label(title);
         titleLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #adadad;");
-
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         Label descriptionLabel = new Label(description);
         descriptionLabel.setWrapText(true);
@@ -112,87 +227,16 @@ public class ReportsView {
         return card;
     }
 
-    private VBox createTopEventsPanel(List<EventoModel> eventos, List<SessaoModel> sessoes) {
-        VBox content = new VBox(12);
-        eventos.stream()
-                .sorted(Comparator.comparingLong((EventoModel evento) -> contarSessoesDoEvento(evento, sessoes)).reversed())
-                .limit(5)
-                .forEach(evento -> {
-                    long totalSessoes = contarSessoesDoEvento(evento, sessoes);
-                    content.getChildren().add(createInfoRow(
-                            evento.titulo(),
-                            totalSessoes + " sessoes"
-                    ));
-                });
-
-        if (content.getChildren().isEmpty()) {
-            content.getChildren().add(createInfoRow("Sem dados", "Nao existem eventos registados"));
-        }
-
-        VBox panel = new VBox(16, createSectionTitle("Eventos com mais sessoes"), content);
-        panel.setPadding(new Insets(22));
-        panel.setStyle(
-                "-fx-background-color: #2c2c2c; " +
-                        "-fx-background-radius: 16; " +
-                        "-fx-border-color: #333333; " +
-                        "-fx-border-radius: 16;"
-        );
-        return panel;
+    private Label createMetricValue() {
+        Label label = new Label("0");
+        label.setStyle("-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white;");
+        return label;
     }
 
-    private VBox createRoomsTablePanel(List<SalaModel> salas, List<SessaoModel> sessoes) {
-        TableView<SalaModel> tableView = new TableView<>();
-
-        TableColumn<SalaModel, String> nomeColumn = new TableColumn<>("Sala");
-        nomeColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().nome()));
-        nomeColumn.setPrefWidth(220);
-
-        TableColumn<SalaModel, Number> capacidadeColumn = new TableColumn<>("Capacidade");
-        capacidadeColumn.setCellValueFactory(data -> new SimpleIntegerProperty(
-                data.getValue().capacidadeTotal() != null ? data.getValue().capacidadeTotal() : 0
-        ));
-        capacidadeColumn.setPrefWidth(120);
-
-        TableColumn<SalaModel, Number> sessoesColumn = new TableColumn<>("Sessoes");
-        sessoesColumn.setCellValueFactory(data -> new SimpleIntegerProperty(
-                (int) sessoes.stream()
-                        .filter(sessao -> data.getValue().id() != null && data.getValue().id().equals(sessao.salaId()))
-                        .count()
-        ));
-        sessoesColumn.setPrefWidth(100);
-
-        tableView.getColumns().setAll(nomeColumn, capacidadeColumn, sessoesColumn);
-        tableView.getItems().setAll(salas);
-        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
-
-        VBox panel = new VBox(16, createSectionTitle("Capacidade por sala"), tableView);
-        VBox.setVgrow(tableView, Priority.ALWAYS);
-        panel.setPadding(new Insets(22));
-        panel.setStyle(
-                "-fx-background-color: #2c2c2c; " +
-                        "-fx-background-radius: 16; " +
-                        "-fx-border-color: #333333; " +
-                        "-fx-border-radius: 16;"
-        );
-        return panel;
-    }
-
-    private VBox createInfoRow(String title, String subtitle) {
-        Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
-
-        Label subtitleLabel = new Label(subtitle);
-        subtitleLabel.setStyle("-fx-text-fill: #8c8c8c; -fx-font-size: 12px;");
-
-        VBox row = new VBox(4, titleLabel, subtitleLabel);
-        row.setPadding(new Insets(12));
-        row.setStyle(
-                "-fx-background-color: #242424; " +
-                        "-fx-background-radius: 12; " +
-                        "-fx-border-color: #303030; " +
-                        "-fx-border-radius: 12;"
-        );
-        return row;
+    private Label createFieldLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: #cfcfcf;");
+        return label;
     }
 
     private Label createSectionTitle(String text) {
@@ -201,10 +245,22 @@ public class ReportsView {
         return label;
     }
 
-    private long contarSessoesDoEvento(EventoModel evento, List<SessaoModel> sessoes) {
-        return sessoes.stream()
-                .filter(sessao -> evento.id() != null && evento.id().equals(sessao.eventoId()))
-                .count();
+    private Instant toStartOfDay(LocalDate date) {
+        if (date == null) {
+            throw new RuntimeException("A data inicial é obrigatória.");
+        }
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
+    private Instant toEndOfDay(LocalDate date) {
+        if (date == null) {
+            throw new RuntimeException("A data final é obrigatória.");
+        }
+        return date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant();
+    }
+
+    private String formatCurrency(BigDecimal value) {
+        return (value != null ? value : BigDecimal.ZERO) + " EUR";
     }
 
     public Parent getRoot() {

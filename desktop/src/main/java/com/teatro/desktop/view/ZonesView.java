@@ -45,16 +45,29 @@ public class ZonesView {
     private final Label feedbackLabel;
     private final Label totalSeatsLabel;
     private final Label selectedZoneLabel;
+    private final Label zoneFormTitleLabel;
+    private final Label seatFormTitleLabel;
+    private final TextField zoneNameField;
+    private final TextField zoneFeeField;
+    private final TextField seatRowField;
+    private final TextField seatNumberField;
+    private final Button saveZoneButton;
+    private final Button deleteZoneButton;
+    private final Button clearZoneButton;
+    private final Button saveSeatButton;
+    private final Button deleteSeatButton;
+    private final Button clearSeatButton;
 
     private SalaModel selectedSala;
     private ZonaModel selectedZona;
+    private LugarModel selectedLugar;
     private List<ZonaModel> currentZonas;
     private List<LugarModel> currentLugares;
 
     public ZonesView(SceneManager sceneManager, AuthService authService, String userEmail) {
-        this.salaApiService = new SalaApiService();
-        this.zonaApiService = new ZonaApiService();
-        this.lugarApiService = new LugarApiService();
+        this.salaApiService = new SalaApiService(authService);
+        this.zonaApiService = new ZonaApiService(authService);
+        this.lugarApiService = new LugarApiService(authService);
         this.salaComboBox = new ComboBox<>();
         this.zonasListBox = new VBox(12);
         this.seatsGrid = new GridPane();
@@ -62,15 +75,29 @@ public class ZonesView {
         this.feedbackLabel = new Label();
         this.totalSeatsLabel = new Label("0");
         this.selectedZoneLabel = new Label("Nenhuma");
+        this.zoneFormTitleLabel = new Label("Adicionar Zona");
+        this.seatFormTitleLabel = new Label("Adicionar Lugar");
+        this.zoneNameField = new TextField();
+        this.zoneFeeField = new TextField();
+        this.seatRowField = new TextField();
+        this.seatNumberField = new TextField();
+        this.saveZoneButton = createPrimaryButton("Guardar zona");
+        this.deleteZoneButton = createSecondaryButton("Remover zona");
+        this.clearZoneButton = createSecondaryButton("Limpar zona");
+        this.saveSeatButton = createPrimaryButton("Guardar lugar");
+        this.deleteSeatButton = createSecondaryButton("Remover lugar");
+        this.clearSeatButton = createSecondaryButton("Limpar lugar");
         this.currentZonas = new ArrayList<>();
         this.currentLugares = new ArrayList<>();
+        this.selectedLugar = null;
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
+                authService,
                 userEmail,
                 AdminLayout.SECTION_ZONES,
-                "Gestao de zonas & lugares",
-                "Configurar zonas de assentos e disposicao individual de lugares",
+                "Gest\u00e3o de zonas e lugares",
+                "Configurar zonas de assentos e disposi\u00e7\u00e3o individual de lugares",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -82,8 +109,13 @@ public class ZonesView {
         VBox centerPanel = buildCenterPanel();
         HBox main = new HBox(20, buildLeftColumn(), centerPanel, buildRightColumn());
         HBox.setHgrow(centerPanel, Priority.ALWAYS);
-        main.setPadding(new Insets(18, 28, 28, 28));
-        return main;
+        main.setPadding(new Insets(14, 20, 20, 20));
+
+        ScrollPane scrollPane = new ScrollPane(main);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        return scrollPane;
     }
 
     private VBox buildLeftColumn() {
@@ -96,28 +128,28 @@ public class ZonesView {
             carregarZonas();
         });
 
-        VBox salaPanel = createPanel(new VBox(12, salaLabel, salaComboBox));
-        salaPanel.setPrefWidth(240);
+        VBox salaPanel = createPanel(new VBox(10, salaLabel, salaComboBox));
+        salaPanel.setPrefWidth(210);
 
         Label zonasLabel = createPanelTitle("Zonas");
         ScrollPane zonasScroll = new ScrollPane(zonasListBox);
         zonasScroll.setFitToWidth(true);
         zonasScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
-        VBox zonasPanel = createPanel(new VBox(12, zonasLabel, zonasScroll));
-        zonasPanel.setPrefWidth(240);
+        VBox zonasPanel = createPanel(new VBox(10, zonasLabel, zonasScroll));
+        zonasPanel.setPrefWidth(210);
         VBox.setVgrow(zonasScroll, Priority.ALWAYS);
 
-        return new VBox(20, salaPanel, zonasPanel);
+        return new VBox(14, salaPanel, zonasPanel);
     }
 
     private VBox buildCenterPanel() {
         seatsTitleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        Button addSeatButton = new Button("+ Adicionar Lugar");
+        Button addSeatButton = new Button("+ Adicionar lugar");
         addSeatButton.setStyle(
                 "-fx-background-color: #1f1f1f; -fx-text-fill: white; " +
-                        "-fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 14 10 14;"
+                        "-fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 8 12 8 12;"
         );
 
         HBox headerRow = new HBox(16, seatsTitleLabel, spacer(), addSeatButton);
@@ -133,7 +165,7 @@ public class ZonesView {
         seatsGrid.setVgap(8);
         seatsGrid.setPadding(new Insets(12));
 
-        VBox panel = createPanel(new VBox(16, headerRow, palcoLabel, seatsGrid));
+        VBox panel = createPanel(new VBox(12, headerRow, palcoLabel, seatsGrid));
         VBox.setVgrow(seatsGrid, Priority.ALWAYS);
         HBox.setHgrow(panel, Priority.ALWAYS);
         return panel;
@@ -147,8 +179,8 @@ public class ZonesView {
 
         feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 12px;");
 
-        VBox right = new VBox(20, legendPanel, statsPanel, zoneForm, seatForm, feedbackLabel);
-        right.setPrefWidth(280);
+        VBox right = new VBox(14, legendPanel, statsPanel, zoneForm, seatForm, feedbackLabel);
+        right.setPrefWidth(245);
         return right;
     }
 
@@ -157,18 +189,18 @@ public class ZonesView {
                 14,
                 createPanelTitle("Legenda"),
                 createLegendRow("Zona selecionada", zoneColor(selectedZona)),
-                createLegendRow("Lugar visivel", "#67a9f4")
+                createLegendRow("Lugar visivel", "#6ea8ff")
         );
         return createPanel(content);
     }
 
     private VBox buildStatsPanel() {
-        totalSeatsLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #67a9f4;");
+        totalSeatsLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #6ea8ff;");
         selectedZoneLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         VBox content = new VBox(
                 12,
-                createPanelTitle("Estatisticas"),
+                createPanelTitle("Estatísticas"),
                 createStatItem("Zona ativa", selectedZoneLabel),
                 createStatItem("Total de lugares", totalSeatsLabel),
                 createMiniProgress("Taxa de desenho", "100%")
@@ -177,62 +209,87 @@ public class ZonesView {
     }
 
     private VBox buildZoneForm() {
-        Label title = createPanelTitle("Adicionar Zona");
+        zoneFormTitleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        zoneNameField.setPromptText("Nome da zona");
+        zoneFeeField.setPromptText("Taxa adicional");
 
-        TextField nomeField = new TextField();
-        nomeField.setPromptText("Nome da zona");
-
-        TextField taxaField = new TextField();
-        taxaField.setPromptText("Taxa adicional");
-
-        Button saveButton = createPrimaryButton("Guardar zona");
-        saveButton.setOnAction(event -> {
+        saveZoneButton.setOnAction(event -> {
             if (selectedSala == null) {
                 feedbackLabel.setText("Selecione primeiro uma sala.");
                 return;
             }
 
             try {
-                BigDecimal taxa = taxaField.getText() == null || taxaField.getText().isBlank()
+                BigDecimal taxa = zoneFeeField.getText() == null || zoneFeeField.getText().isBlank()
                         ? BigDecimal.ZERO
-                        : new BigDecimal(taxaField.getText());
+                        : new BigDecimal(zoneFeeField.getText());
 
-                ZonaModel zona = new ZonaModel(null, nomeField.getText(), taxa, selectedSala.id());
-                zonaApiService.criarZona(zona);
-                feedbackLabel.setText("Zona criada com sucesso.");
-                nomeField.clear();
-                taxaField.clear();
+                ZonaModel zona = new ZonaModel(
+                        selectedZona != null ? selectedZona.id() : null,
+                        zoneNameField.getText(),
+                        taxa,
+                        selectedSala.id()
+                );
+
+                if (selectedZona == null) {
+                    zonaApiService.criarZona(zona);
+                    feedbackLabel.setText("Zona criada com sucesso.");
+                } else {
+                    zonaApiService.atualizarZona(zona);
+                    feedbackLabel.setText("Zona atualizada com sucesso.");
+                }
+
+                limparZonaSelecionada();
                 carregarZonas();
             } catch (NumberFormatException e) {
-                feedbackLabel.setText("A taxa adicional deve ser numerica.");
+                feedbackLabel.setText("A taxa adicional deve ser numérica.");
             } catch (RuntimeException e) {
                 feedbackLabel.setText(e.getMessage());
             }
         });
 
+        deleteZoneButton.setDisable(true);
+        deleteZoneButton.setOnAction(event -> {
+            if (selectedZona == null) {
+                feedbackLabel.setText("Selecione primeiro uma zona.");
+                return;
+            }
+
+            try {
+                zonaApiService.eliminarZona(selectedZona.id());
+                feedbackLabel.setText("Zona removida com sucesso.");
+                limparZonaSelecionada();
+                carregarZonas();
+            } catch (RuntimeException e) {
+                feedbackLabel.setText(e.getMessage());
+            }
+        });
+
+        clearZoneButton.setOnAction(event -> {
+            limparZonaSelecionada();
+            feedbackLabel.setText("");
+        });
+
+        HBox actions = new HBox(10, saveZoneButton, deleteZoneButton);
         VBox content = new VBox(
                 12,
-                title,
+                zoneFormTitleLabel,
                 createFormLabel("Nome"),
-                nomeField,
+                zoneNameField,
                 createFormLabel("Taxa adicional"),
-                taxaField,
-                saveButton
+                zoneFeeField,
+                actions,
+                clearZoneButton
         );
         return createPanel(content);
     }
 
     private VBox buildSeatForm() {
-        Label title = createPanelTitle("Adicionar Lugar");
+        seatFormTitleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        seatRowField.setPromptText("Fila");
+        seatNumberField.setPromptText("Número");
 
-        TextField filaField = new TextField();
-        filaField.setPromptText("Fila");
-
-        TextField numeroField = new TextField();
-        numeroField.setPromptText("Numero");
-
-        Button saveButton = createPrimaryButton("Guardar lugar");
-        saveButton.setOnAction(event -> {
+        saveSeatButton.setOnAction(event -> {
             if (selectedZona == null) {
                 feedbackLabel.setText("Selecione primeiro uma zona.");
                 return;
@@ -240,31 +297,61 @@ public class ZonesView {
 
             try {
                 LugarModel lugar = new LugarModel(
-                        null,
-                        filaField.getText(),
-                        Integer.parseInt(numeroField.getText()),
+                        selectedLugar != null ? selectedLugar.id() : null,
+                        seatRowField.getText(),
+                        Integer.parseInt(seatNumberField.getText()),
                         selectedZona.id()
                 );
-                lugarApiService.criarLugar(lugar);
-                feedbackLabel.setText("Lugar criado com sucesso.");
-                filaField.clear();
-                numeroField.clear();
+
+                if (selectedLugar == null) {
+                    lugarApiService.criarLugar(lugar);
+                    feedbackLabel.setText("Lugar criado com sucesso.");
+                } else {
+                    lugarApiService.atualizarLugar(lugar);
+                    feedbackLabel.setText("Lugar atualizado com sucesso.");
+                }
+
+                limparLugarSelecionado();
                 carregarLugares();
             } catch (NumberFormatException e) {
-                feedbackLabel.setText("O numero do lugar deve ser numerico.");
+                feedbackLabel.setText("O número do lugar deve ser numérico.");
             } catch (RuntimeException e) {
                 feedbackLabel.setText(e.getMessage());
             }
         });
 
+        deleteSeatButton.setDisable(true);
+        deleteSeatButton.setOnAction(event -> {
+            if (selectedLugar == null) {
+                feedbackLabel.setText("Selecione primeiro um lugar.");
+                return;
+            }
+
+            try {
+                lugarApiService.eliminarLugar(selectedLugar.id());
+                feedbackLabel.setText("Lugar removido com sucesso.");
+                limparLugarSelecionado();
+                carregarLugares();
+            } catch (RuntimeException e) {
+                feedbackLabel.setText(e.getMessage());
+            }
+        });
+
+        clearSeatButton.setOnAction(event -> {
+            limparLugarSelecionado();
+            feedbackLabel.setText("");
+        });
+
+        HBox actions = new HBox(10, saveSeatButton, deleteSeatButton);
         VBox content = new VBox(
                 12,
-                title,
+                seatFormTitleLabel,
                 createFormLabel("Fila"),
-                filaField,
-                createFormLabel("Numero"),
-                numeroField,
-                saveButton
+                seatRowField,
+                createFormLabel("Número"),
+                seatNumberField,
+                actions,
+                clearSeatButton
         );
         return createPanel(content);
     }
@@ -298,6 +385,8 @@ public class ZonesView {
         seatsTitleLabel.setText("Mapa de Lugares");
         totalSeatsLabel.setText("0");
         selectedZoneLabel.setText("Nenhuma");
+        limparZonaSelecionada();
+        limparLugarSelecionado();
         currentLugares = new ArrayList<>();
 
         if (selectedSala == null) {
@@ -322,6 +411,7 @@ public class ZonesView {
             seatsTitleLabel.setText("Mapa de Lugares");
             selectedZoneLabel.setText("Nenhuma");
             totalSeatsLabel.setText("0");
+            limparLugarSelecionado();
             currentLugares = new ArrayList<>();
             return;
         }
@@ -345,17 +435,18 @@ public class ZonesView {
             int rowIndex = 0;
             for (Map.Entry<String, List<LugarModel>> entry : porFila.entrySet()) {
                 Label filaLabel = new Label(entry.getKey());
-                filaLabel.setStyle("-fx-text-fill: #bfbfbf; -fx-font-weight: bold;");
+                filaLabel.setStyle("-fx-text-fill: #bfbfbf; -fx-font-weight: bold; -fx-font-size: 12px;");
                 seatsGrid.add(filaLabel, 0, rowIndex);
 
                 int colIndex = 1;
                 for (LugarModel lugar : entry.getValue()) {
                     Button seatButton = new Button(String.valueOf(lugar.numero()));
-                    seatButton.setMinSize(42, 36);
+                    seatButton.setMinSize(36, 30);
                     seatButton.setStyle(
-                            "-fx-background-color: " + zoneColor(selectedZona) + "; " +
-                                    "-fx-text-fill: white; -fx-background-radius: 8; -fx-font-weight: bold;"
+                            "-fx-background-color: " + (selectedLugar != null && lugar.id().equals(selectedLugar.id()) ? "#ff9f43" : zoneColor(selectedZona)) + "; " +
+                                    "-fx-text-fill: white; -fx-background-radius: 8; -fx-font-weight: bold; -fx-font-size: 11px;"
                     );
+                    seatButton.setOnAction(event -> selecionarLugar(lugar));
                     seatsGrid.add(seatButton, colIndex++, rowIndex);
                 }
                 rowIndex++;
@@ -390,16 +481,18 @@ public class ZonesView {
         VBox textBox = new VBox(6, nameLabel, feeLabel);
         HBox header = new HBox(10, swatch, textBox);
 
-        VBox card = new VBox(10, header, countLabel);
-        card.setPadding(new Insets(14));
+        VBox card = new VBox(8, header, countLabel);
+        card.setPadding(new Insets(10));
         card.setStyle(
                 "-fx-background-color: " + (selectedZona != null && zona.id().equals(selectedZona.id()) ? "#335a8d" : "#242424") + "; " +
                         "-fx-background-radius: 12; " +
-                        "-fx-border-color: " + (selectedZona != null && zona.id().equals(selectedZona.id()) ? "#67a9f4" : "#2f2f2f") + "; " +
+                        "-fx-border-color: " + (selectedZona != null && zona.id().equals(selectedZona.id()) ? "#6ea8ff" : "#2f2f2f") + "; " +
                         "-fx-border-radius: 12;"
         );
         card.setOnMouseClicked(event -> {
             selectedZona = zona;
+            preencherZonaForm(zona);
+            limparLugarSelecionado();
             carregarZonas();
             carregarLugares();
         });
@@ -408,16 +501,16 @@ public class ZonesView {
 
     private String zoneColor(ZonaModel zona) {
         if (zona == null || zona.nome() == null) {
-            return "#67a9f4";
+            return "#6ea8ff";
         }
 
         Map<String, String> palette = new HashMap<>();
-        palette.put("Orquestra", "#4a8cff");
+        palette.put("Orquestra", "#4e8fe8");
         palette.put("Mezanino", "#8d5cf6");
         palette.put("Plateia", "#29c58c");
         palette.put("Balcao", "#ff9f43");
 
-        return palette.getOrDefault(zona.nome(), "#67a9f4");
+        return palette.getOrDefault(zona.nome(), "#6ea8ff");
     }
 
     private HBox createLegendRow(String labelText, String color) {
@@ -447,8 +540,8 @@ public class ZonesView {
 
         Region fill = new Region();
         fill.setPrefHeight(8);
-        fill.setPrefWidth(120);
-        fill.setStyle("-fx-background-color: #67a9f4; -fx-background-radius: 8;");
+        fill.setPrefWidth(92);
+        fill.setStyle("-fx-background-color: #6ea8ff; -fx-background-radius: 8;");
 
         Region track = new Region();
         track.setPrefHeight(8);
@@ -464,7 +557,7 @@ public class ZonesView {
 
     private VBox createPanel(Parent content) {
         VBox panel = new VBox(content);
-        panel.setPadding(new Insets(18));
+        panel.setPadding(new Insets(14));
         panel.setStyle(
                 "-fx-background-color: #2c2c2c; -fx-background-radius: 16; " +
                         "-fx-border-color: #333333; -fx-border-radius: 16;"
@@ -474,7 +567,7 @@ public class ZonesView {
 
     private Label createPanelTitle(String text) {
         Label label = new Label(text);
-        label.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        label.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
         return label;
     }
 
@@ -491,9 +584,64 @@ public class ZonesView {
                 "-fx-background-color: #6f2232; " +
                         "-fx-text-fill: white; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-padding: 10 18 10 18;"
+                        "-fx-padding: 8 14 8 14;"
         );
         return button;
+    }
+
+    private Button createSecondaryButton(String text) {
+        Button button = new Button(text);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setStyle(
+                "-fx-background-color: #1f1f1f; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 8 14 8 14;"
+        );
+        return button;
+    }
+
+    private void preencherZonaForm(ZonaModel zona) {
+        selectedZona = zona;
+
+        if (zona == null) {
+            zoneFormTitleLabel.setText("Adicionar Zona");
+            saveZoneButton.setText("Guardar zona");
+            deleteZoneButton.setDisable(true);
+            zoneNameField.clear();
+            zoneFeeField.clear();
+            return;
+        }
+
+        zoneFormTitleLabel.setText("Editar Zona");
+        saveZoneButton.setText("Atualizar zona");
+        deleteZoneButton.setDisable(false);
+        zoneNameField.setText(zona.nome());
+        zoneFeeField.setText(zona.taxaAdicional() != null ? zona.taxaAdicional().toString() : "");
+    }
+
+    private void limparZonaSelecionada() {
+        preencherZonaForm(null);
+        selectedZona = null;
+    }
+
+    private void selecionarLugar(LugarModel lugar) {
+        selectedLugar = lugar;
+        seatFormTitleLabel.setText("Editar Lugar");
+        saveSeatButton.setText("Atualizar lugar");
+        deleteSeatButton.setDisable(false);
+        seatRowField.setText(lugar.fila());
+        seatNumberField.setText(lugar.numero() != null ? String.valueOf(lugar.numero()) : "");
+        carregarLugares();
+    }
+
+    private void limparLugarSelecionado() {
+        selectedLugar = null;
+        seatFormTitleLabel.setText("Adicionar Lugar");
+        saveSeatButton.setText("Guardar lugar");
+        deleteSeatButton.setDisable(true);
+        seatRowField.clear();
+        seatNumberField.clear();
     }
 
     private Region spacer() {

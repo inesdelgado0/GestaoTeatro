@@ -17,18 +17,21 @@ public class SessaoApiService {
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final AuthService authService;
 
-    public SessaoApiService() {
+    public SessaoApiService(AuthService authService) {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+        this.authService = authService;
     }
 
     public List<SessaoModel> listarSessoes() {
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(ApiConfig.BASE_URL + "/sessoes"))
-                .GET()
-                .build();
+                .GET();
+        authService.applyAuthentication(requestBuilder);
+        HttpRequest request = requestBuilder.build();
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -36,7 +39,7 @@ public class SessaoApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw new RuntimeException("Nao foi possivel obter as sessoes. HTTP " + response.statusCode());
+            throw ApiErrorHandler.buildException("Nao foi possivel obter as sessoes.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
@@ -47,17 +50,63 @@ public class SessaoApiService {
         try {
             String json = objectMapper.writeValueAsString(sessao);
 
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(ApiConfig.BASE_URL + "/sessoes"))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), SessaoModel.class);
             }
-            throw new RuntimeException("Nao foi possivel criar a sessao. HTTP " + response.statusCode());
+            throw ApiErrorHandler.buildException("Nao foi possivel criar a sessao.", response);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+        }
+    }
+
+    public SessaoModel atualizarSessao(SessaoModel sessao) {
+        if (sessao.id() == null) {
+            throw new RuntimeException("A sessao tem de ter identificador para ser atualizada.");
+        }
+
+        try {
+            String json = objectMapper.writeValueAsString(sessao);
+
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(ApiConfig.BASE_URL + "/sessoes/" + sessao.id()))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(json));
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return objectMapper.readValue(response.body(), SessaoModel.class);
+            }
+            throw ApiErrorHandler.buildException("Nao foi possivel atualizar a sessao.", response);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+        }
+    }
+
+    public void eliminarSessao(Integer sessaoId) {
+        try {
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(ApiConfig.BASE_URL + "/sessoes/" + sessaoId))
+                    .DELETE();
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return;
+            }
+            throw ApiErrorHandler.buildException("Nao foi possivel eliminar a sessao.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);

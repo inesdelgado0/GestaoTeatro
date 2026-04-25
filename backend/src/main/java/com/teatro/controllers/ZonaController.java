@@ -51,6 +51,23 @@ public class ZonaController {
         return ResponseEntity.ok(toResponseDto(zonaService.criarZona(zona)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ZonaResponseDto> update(@PathVariable Integer id, @RequestBody ZonaRequestDto request) {
+        Zona zona = Zona.builder()
+                .nome(request.nome())
+                .taxaAdicional(request.taxaAdicional())
+                .sala(request.salaId() != null ? Sala.builder().id(request.salaId()).build() : null)
+                .build();
+
+        return ResponseEntity.ok(toResponseDto(zonaService.atualizarZona(id, zona)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        zonaService.eliminarZona(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private ZonaResponseDto toResponseDto(Zona zona) {
         return new ZonaResponseDto(
                 zona.getId(),

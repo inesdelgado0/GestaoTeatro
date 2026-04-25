@@ -11,7 +11,10 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 public class LoginView {
 
@@ -19,53 +22,43 @@ public class LoginView {
 
     public LoginView(SceneManager sceneManager, AuthService authService) {
         root = new BorderPane();
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #161616, #232323);");
+        root.setStyle(
+                "-fx-background-color: linear-gradient(to bottom right, #141414, #1d1d1d 55%, #111111);"
+        );
+
+        ImageView symbolView = new ImageView(new Image(getClass().getResourceAsStream("/assets/app-symbol.png")));
+        symbolView.setFitWidth(82);
+        symbolView.setFitHeight(82);
+        symbolView.setPreserveRatio(true);
 
         Label brandLabel = new Label("Teatro Central");
-        brandLabel.setStyle("-fx-font-size: 34px; -fx-font-weight: bold; -fx-text-fill: #67a9f4;");
+        brandLabel.setStyle("-fx-font-size: 34px; -fx-font-weight: bold; -fx-text-fill: #6ea8ff;");
 
-        Label titleLabel = new Label("Acesso Administrativo");
-        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;");
+        Label subtitleLabel = new Label("Back-office");
+        subtitleLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #b0b0b0; -fx-font-weight: bold;");
 
-        Label subtitle = new Label("Entrar com uma conta administrativa pre-configurada");
-        subtitle.setStyle("-fx-font-size: 14px; -fx-text-fill: #9f9f9f;");
+        VBox brandBox = new VBox(14, symbolView, brandLabel, subtitleLabel);
+        brandBox.setAlignment(Pos.CENTER);
 
-        Label hintLabel = new Label("Conta principal: admin@teatro.pt");
-        hintLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #7f7f7f;");
-
-        TextField emailField = new TextField();
-        emailField.setPromptText("Email");
-        emailField.setMaxWidth(320);
-        emailField.setStyle(
-                "-fx-background-color: #2a2a2a; " +
-                        "-fx-text-fill: white; " +
-                        "-fx-prompt-text-fill: #7f7f7f; " +
-                        "-fx-background-radius: 10; " +
-                        "-fx-padding: 12 14 12 14;"
-        );
+        TextField emailField = createInputField("Email");
 
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-        passwordField.setMaxWidth(320);
-        passwordField.setStyle(
-                "-fx-background-color: #2a2a2a; " +
-                        "-fx-text-fill: white; " +
-                        "-fx-prompt-text-fill: #7f7f7f; " +
-                        "-fx-background-radius: 10; " +
-                        "-fx-padding: 12 14 12 14;"
-        );
+        passwordField.setMaxWidth(Double.MAX_VALUE);
+        passwordField.setStyle(inputStyle());
 
         Label feedbackLabel = new Label();
-        feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 12px;");
+        feedbackLabel.setStyle("-fx-text-fill: #ff9a9a; -fx-font-size: 12px;");
 
         Button loginButton = new Button("Entrar");
         loginButton.setDefaultButton(true);
         loginButton.setStyle(
-                "-fx-background-color: #67a9f4; " +
+                "-fx-background-color: linear-gradient(to right, #6ea8ff, #4e8fe8); " +
                         "-fx-text-fill: white; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-background-radius: 10; " +
-                        "-fx-padding: 12 24 12 24;"
+                        "-fx-font-size: 14px; " +
+                        "-fx-background-radius: 12; " +
+                        "-fx-padding: 13 28 13 28;"
         );
 
         loginButton.setOnAction(event -> {
@@ -80,44 +73,65 @@ public class LoginView {
             }
         });
 
-        HBox actions = new HBox(12, loginButton);
-        actions.setAlignment(Pos.CENTER_LEFT);
+        VBox fieldsBox = new VBox(14, createFieldBlock("Email", emailField), createFieldBlock("Password", passwordField));
 
-        Label sideTitle = new Label("Painel de Administracao");
-        sideTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        HBox actionRow = new HBox(loginButton);
+        actionRow.setAlignment(Pos.CENTER);
 
-        Label sideText = new Label("Gerir eventos, sessoes, salas, zonas, lugares e relatorios a partir de um unico back-office.");
-        sideText.setWrapText(true);
-        sideText.setStyle("-fx-font-size: 14px; -fx-text-fill: #a7a7a7;");
+        Region separator = createSeparator();
 
-        VBox infoPanel = new VBox(16, brandLabel, sideTitle, sideText);
-        infoPanel.setPadding(new Insets(40));
-        infoPanel.setPrefWidth(420);
-        infoPanel.setStyle(
-                "-fx-background-color: #1d1d1d; " +
-                        "-fx-background-radius: 20; " +
-                        "-fx-border-color: #2e2e2e; " +
-                        "-fx-border-radius: 20;"
+        VBox loginCard = new VBox(
+                20,
+                brandBox,
+                separator,
+                fieldsBox,
+                actionRow,
+                feedbackLabel
         );
-
-        VBox loginCard = new VBox(14, titleLabel, subtitle, hintLabel, emailField, passwordField, actions, feedbackLabel);
-        loginCard.setAlignment(Pos.CENTER_LEFT);
-        loginCard.setMaxWidth(420);
-        loginCard.setPadding(new Insets(40));
+        loginCard.setAlignment(Pos.CENTER);
+        loginCard.setMaxWidth(460);
+        loginCard.setPadding(new Insets(30, 34, 30, 34));
         loginCard.setStyle(
-                "-fx-background-color: #242424; " +
-                        "-fx-background-radius: 20; " +
-                        "-fx-border-radius: 20; " +
-                        "-fx-border-color: #313131; " +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 18, 0.2, 0, 6);"
+                "-fx-background-color: linear-gradient(to bottom, rgba(36,36,36,0.98), rgba(29,29,29,0.98)); " +
+                        "-fx-background-radius: 26; " +
+                        "-fx-border-radius: 26; " +
+                        "-fx-border-color: rgba(255,255,255,0.08); " +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.34), 28, 0.25, 0, 10);"
         );
 
-        HBox layout = new HBox(28, infoPanel, loginCard);
-        layout.setAlignment(Pos.CENTER);
+        BorderPane.setAlignment(loginCard, Pos.CENTER);
+        root.setCenter(loginCard);
+        root.setPadding(new Insets(32));
+    }
 
-        BorderPane.setAlignment(layout, Pos.CENTER);
-        root.setCenter(layout);
-        root.setPadding(new Insets(40));
+    private TextField createInputField(String promptText) {
+        TextField field = new TextField();
+        field.setPromptText(promptText);
+        field.setMaxWidth(Double.MAX_VALUE);
+        field.setStyle(inputStyle());
+        return field;
+    }
+
+    private VBox createFieldBlock(String labelText, javafx.scene.control.Control input) {
+        Label label = new Label(labelText);
+        label.setStyle("-fx-text-fill: #d0d0d0; -fx-font-size: 13px; -fx-font-weight: bold;");
+        return new VBox(8, label, input);
+    }
+
+    private String inputStyle() {
+        return "-fx-background-color: #2b2b2b; " +
+                "-fx-text-fill: white; " +
+                "-fx-prompt-text-fill: #727272; " +
+                "-fx-background-radius: 12; " +
+                "-fx-padding: 14 16 14 16; " +
+                "-fx-font-size: 14px;";
+    }
+
+    private Region createSeparator() {
+        Region separator = new Region();
+        separator.setPrefHeight(1);
+        separator.setStyle("-fx-background-color: rgba(255,255,255,0.08);");
+        return separator;
     }
 
     public Parent getRoot() {

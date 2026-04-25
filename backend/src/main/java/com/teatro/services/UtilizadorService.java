@@ -5,6 +5,7 @@ import com.teatro.entities.Utilizador;
 import com.teatro.repositories.TipoUtilizadorRepository;
 import com.teatro.repositories.UtilizadorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public class UtilizadorService {
 
     private final UtilizadorRepository utilizadorRepository;
     private final TipoUtilizadorRepository tipoUtilizadorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public List<Utilizador> listarTodos() {
         return utilizadorRepository.findAll();
@@ -41,8 +43,13 @@ public class UtilizadorService {
         Utilizador utilizador = utilizadorRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Credenciais invalidas."));
 
-        if (!utilizador.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, utilizador.getPassword())) {
             throw new RuntimeException("Credenciais invalidas.");
+        }
+
+        if (!isPasswordHashed(utilizador.getPassword())) {
+            utilizador.setPassword(passwordEncoder.encode(password));
+            utilizadorRepository.save(utilizador);
         }
 
         if (utilizador.getTipoUtilizador() == null
@@ -75,7 +82,13 @@ public class UtilizadorService {
                 .orElseThrow(() -> new RuntimeException("Tipo de utilizador 'Cliente' nao encontrado."));
 
         utilizador.setTipoUtilizador(tipoCliente);
+        utilizador.setPassword(passwordEncoder.encode(utilizador.getPassword()));
 
         return utilizadorRepository.save(utilizador);
+    }
+
+    private boolean isPasswordHashed(String password) {
+        return password != null
+                && (password.startsWith("$2a$") || password.startsWith("$2b$") || password.startsWith("$2y$"));
     }
 }

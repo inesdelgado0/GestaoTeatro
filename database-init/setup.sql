@@ -100,7 +100,7 @@ INSERT INTO Utilizador (
 ) VALUES (
     'Administrador Principal',
     'admin@teatro.pt',
-    'admin123',
+    '$2a$10$w1suLT79mBxablCCMlXodeRBM8iIeZnK2bt1Z8YX.Is4kB77HNy5u',
     NULL,
     NULL,
     NULL,

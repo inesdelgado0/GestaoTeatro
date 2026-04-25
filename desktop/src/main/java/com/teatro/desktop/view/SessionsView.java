@@ -43,21 +43,34 @@ public class SessionsView {
     private final SalaApiService salaApiService;
     private final Label feedbackLabel;
     private final String userEmail;
+    private SessaoModel selectedSessao;
+
+    private ComboBox<EventoModel> eventoComboBox;
+    private ComboBox<SalaModel> salaComboBox;
+    private DatePicker dataPicker;
+    private TextField horaField;
+    private TextField precoBaseField;
+    private ComboBox<String> estadoComboBox;
+    private Label formTitleLabel;
+    private Button saveButton;
+    private Button deleteButton;
 
     public SessionsView(SceneManager sceneManager, AuthService authService, String userEmail) {
         this.tableView = new TableView<>();
-        this.sessaoApiService = new SessaoApiService();
-        this.eventoApiService = new EventoApiService();
-        this.salaApiService = new SalaApiService();
+        this.sessaoApiService = new SessaoApiService(authService);
+        this.eventoApiService = new EventoApiService(authService);
+        this.salaApiService = new SalaApiService(authService);
         this.feedbackLabel = new Label();
         this.userEmail = userEmail;
+        this.selectedSessao = null;
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
+                authService,
                 userEmail,
                 AdminLayout.SECTION_SESSIONS,
-                "Gestao de Sessoes",
-                "Agendamento de sessoes e consulta do planeamento atual",
+                "Gest\u00e3o de Sess\u00f5es",
+                "Agendamento de sess\u00f5es e consulta do planeamento atual",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -67,7 +80,9 @@ public class SessionsView {
 
     private Parent buildContent() {
         setupTable();
-        VBox tableCard = new VBox(12, new Label("Sessoes agendadas"), tableView);
+        Label tableTitleLabel = new Label("Sess\u00f5es agendadas");
+        tableTitleLabel.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #f3f4f6;");
+        VBox tableCard = new VBox(12, tableTitleLabel, tableView);
         VBox.setVgrow(tableView, Priority.ALWAYS);
         tableCard.setPadding(new Insets(20));
         tableCard.setStyle(
@@ -95,7 +110,7 @@ public class SessionsView {
         ));
         dataHoraColumn.setPrefWidth(220);
 
-        TableColumn<SessaoModel, String> precoColumn = new TableColumn<>("Preco Base");
+        TableColumn<SessaoModel, String> precoColumn = new TableColumn<>("Preço Base");
         precoColumn.setCellValueFactory(data -> new SimpleStringProperty(
                 data.getValue().precoBase() != null ? data.getValue().precoBase().toString() : ""
         ));
@@ -118,44 +133,69 @@ public class SessionsView {
         estadoColumn.setPrefWidth(120);
 
         tableView.getColumns().setAll(idColumn, dataHoraColumn, precoColumn, eventoColumn, salaColumn, estadoColumn);
+        tableView.setPlaceholder(new Label("Sem dados disponíveis."));
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> preencherFormulario(newValue));
     }
 
     private VBox buildSessionForm() {
-        Label title = new Label("Criar Sessao");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        formTitleLabel = new Label("Criar Sessão");
+        formTitleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        ComboBox<EventoModel> eventoComboBox = new ComboBox<>();
+        eventoComboBox = new ComboBox<>();
         eventoComboBox.setPromptText("Selecionar evento");
         eventoComboBox.setMaxWidth(Double.MAX_VALUE);
         configurarEventoComboBox(eventoComboBox);
 
-        ComboBox<SalaModel> salaComboBox = new ComboBox<>();
+        salaComboBox = new ComboBox<>();
         salaComboBox.setPromptText("Selecionar sala");
         salaComboBox.setMaxWidth(Double.MAX_VALUE);
         configurarSalaComboBox(salaComboBox);
 
-        DatePicker dataPicker = new DatePicker();
+        dataPicker = new DatePicker();
         dataPicker.setPromptText("Selecionar data");
         dataPicker.setMaxWidth(Double.MAX_VALUE);
 
-        TextField horaField = new TextField();
+        horaField = new TextField();
         horaField.setPromptText("Hora (HH:mm)");
 
-        TextField precoBaseField = new TextField();
-        precoBaseField.setPromptText("Preco base");
+        precoBaseField = new TextField();
+        precoBaseField.setPromptText("Preço base");
+
+        estadoComboBox = new ComboBox<>();
+        estadoComboBox.getItems().setAll("Aberta", "Esgotada", "Finalizada", "Cancelada");
+        estadoComboBox.setPromptText("Estado");
+        estadoComboBox.setMaxWidth(Double.MAX_VALUE);
+        estadoComboBox.setValue("Aberta");
 
         feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 12px;");
 
-        Button createButton = new Button("Guardar sessao");
-        createButton.setStyle(
+        saveButton = new Button("Guardar sessão");
+        saveButton.setStyle(
                 "-fx-background-color: #6f2232; " +
                         "-fx-text-fill: white; " +
                         "-fx-font-weight: bold; " +
                         "-fx-padding: 10 18 10 18;"
         );
 
-        createButton.setOnAction(event -> {
+        deleteButton = new Button("Remover sessão");
+        deleteButton.setDisable(true);
+        deleteButton.setStyle(
+                "-fx-background-color: #383838; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 10 18 10 18;"
+        );
+
+        Button clearButton = new Button("Limpar seleção");
+        clearButton.setStyle(
+                "-fx-background-color: #1f1f1f; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 10 18 10 18;"
+        );
+
+        saveButton.setOnAction(event -> {
             try {
                 EventoModel eventoSelecionado = eventoComboBox.getValue();
                 SalaModel salaSelecionada = salaComboBox.getValue();
@@ -171,29 +211,52 @@ public class SessionsView {
                 Instant dataHora = dataHoraLocal.atZone(ZoneId.systemDefault()).toInstant();
 
                 SessaoModel novaSessao = new SessaoModel(
-                        null,
+                        selectedSessao != null ? selectedSessao.id() : null,
                         dataHora,
                         new BigDecimal(precoBaseField.getText()),
-                        null,
+                        estadoComboBox.getValue(),
                         eventoSelecionado.id(),
                         salaSelecionada.id()
                 );
 
-                sessaoApiService.criarSessao(novaSessao);
-                feedbackLabel.setText("Sessao criada com sucesso.");
-                eventoComboBox.getSelectionModel().clearSelection();
-                salaComboBox.getSelectionModel().clearSelection();
-                dataPicker.setValue(null);
-                horaField.clear();
-                precoBaseField.clear();
+                if (selectedSessao == null) {
+                    sessaoApiService.criarSessao(novaSessao);
+                    feedbackLabel.setText("Sessão criada com sucesso.");
+                } else {
+                    sessaoApiService.atualizarSessao(novaSessao);
+                    feedbackLabel.setText("Sessão atualizada com sucesso.");
+                }
+
+                limparFormulario();
                 carregarSessoes();
             } catch (NumberFormatException e) {
-                feedbackLabel.setText("O preco base deve ser numerico.");
+                feedbackLabel.setText("O preço base deve ser numérico.");
             } catch (DateTimeParseException e) {
                 feedbackLabel.setText("A hora deve estar no formato HH:mm.");
             } catch (RuntimeException e) {
                 feedbackLabel.setText(e.getMessage());
             }
+        });
+
+        deleteButton.setOnAction(event -> {
+            if (selectedSessao == null) {
+                feedbackLabel.setText("Selecione uma sessão para remover.");
+                return;
+            }
+
+            try {
+                sessaoApiService.eliminarSessao(selectedSessao.id());
+                feedbackLabel.setText("Sessão removida com sucesso.");
+                limparFormulario();
+                carregarSessoes();
+            } catch (RuntimeException e) {
+                feedbackLabel.setText(e.getMessage());
+            }
+        });
+
+        clearButton.setOnAction(event -> {
+            limparFormulario();
+            feedbackLabel.setText("");
         });
 
         GridPane form = new GridPane();
@@ -207,10 +270,13 @@ public class SessionsView {
         form.add(dataPicker, 0, 5);
         form.add(createFormLabel("Hora"), 0, 6);
         form.add(horaField, 0, 7);
-        form.add(createFormLabel("Preco base"), 0, 8);
+        form.add(createFormLabel("Preço base"), 0, 8);
         form.add(precoBaseField, 0, 9);
+        form.add(createFormLabel("Estado"), 0, 10);
+        form.add(estadoComboBox, 0, 11);
 
-        VBox formCard = new VBox(14, title, form, createButton, feedbackLabel);
+        HBox actions = new HBox(10, saveButton, deleteButton);
+        VBox formCard = new VBox(14, formTitleLabel, form, actions, clearButton, feedbackLabel);
         formCard.setPadding(new Insets(20));
         formCard.setStyle(
                 "-fx-background-color: #2c2c2c; -fx-background-radius: 16; " +
@@ -278,6 +344,79 @@ public class SessionsView {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: #cfcfcf;");
         return label;
+    }
+
+    private void preencherFormulario(SessaoModel sessao) {
+        selectedSessao = sessao;
+
+        if (sessao == null) {
+            formTitleLabel.setText("Criar Sessão");
+            saveButton.setText("Guardar sessão");
+            deleteButton.setDisable(true);
+            return;
+        }
+
+        formTitleLabel.setText("Editar Sessão");
+        saveButton.setText("Atualizar sessão");
+        deleteButton.setDisable(false);
+        selecionarEvento(sessao.eventoId());
+        selecionarSala(sessao.salaId());
+
+        if (sessao.dataHora() != null) {
+            LocalDateTime dataHoraLocal = LocalDateTime.ofInstant(sessao.dataHora(), ZoneId.systemDefault());
+            dataPicker.setValue(dataHoraLocal.toLocalDate());
+            horaField.setText(dataHoraLocal.toLocalTime().withSecond(0).withNano(0).toString());
+        } else {
+            dataPicker.setValue(null);
+            horaField.clear();
+        }
+
+        precoBaseField.setText(sessao.precoBase() != null ? sessao.precoBase().toString() : "");
+        estadoComboBox.setValue(sessao.estado() != null ? sessao.estado() : "Aberta");
+    }
+
+    private void limparFormulario() {
+        selectedSessao = null;
+        tableView.getSelectionModel().clearSelection();
+        eventoComboBox.getSelectionModel().clearSelection();
+        salaComboBox.getSelectionModel().clearSelection();
+        dataPicker.setValue(null);
+        horaField.clear();
+        precoBaseField.clear();
+        estadoComboBox.setValue("Aberta");
+        formTitleLabel.setText("Criar Sessão");
+        saveButton.setText("Guardar sessão");
+        deleteButton.setDisable(true);
+    }
+
+    private void selecionarEvento(Integer eventoId) {
+        if (eventoId == null) {
+            eventoComboBox.getSelectionModel().clearSelection();
+            return;
+        }
+
+        eventoComboBox.getItems().stream()
+                .filter(evento -> eventoId.equals(evento.id()))
+                .findFirst()
+                .ifPresentOrElse(
+                        evento -> eventoComboBox.getSelectionModel().select(evento),
+                        () -> eventoComboBox.getSelectionModel().clearSelection()
+                );
+    }
+
+    private void selecionarSala(Integer salaId) {
+        if (salaId == null) {
+            salaComboBox.getSelectionModel().clearSelection();
+            return;
+        }
+
+        salaComboBox.getItems().stream()
+                .filter(sala -> salaId.equals(sala.id()))
+                .findFirst()
+                .ifPresentOrElse(
+                        sala -> salaComboBox.getSelectionModel().select(sala),
+                        () -> salaComboBox.getSelectionModel().clearSelection()
+                );
     }
 
     public Parent getRoot() {

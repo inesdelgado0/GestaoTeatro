@@ -10,6 +10,7 @@ import java.util.List;
 public interface BilheteRepository extends JpaRepository<Bilhete, Integer> {
     List<Bilhete> findBySessaoId(Integer sessaoId);
     List<Bilhete> findByUtilizadorId(Integer utilizadorId);
+    boolean existsBySessaoId(Integer sessaoId);
 }
 
 //veriffica todas as compras associadas a uma sessao

@@ -59,6 +59,19 @@ public class EventoController {
         return ResponseEntity.ok(toResponseDto(eventoService.criarEvento(evento)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<EventoResponseDto> update(@PathVariable Integer id, @RequestBody EventoRequestDto request) {
+        Evento evento = Evento.builder()
+                .titulo(request.titulo())
+                .descricao(request.descricao())
+                .duracaoMin(request.duracaoMin())
+                .classificacaoEtaria(request.classificacaoEtaria())
+                .genero(request.genero())
+                .build();
+
+        return ResponseEntity.ok(toResponseDto(eventoService.atualizarEvento(id, evento)));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         eventoService.eliminarEvento(id);
