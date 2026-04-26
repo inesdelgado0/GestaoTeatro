@@ -9,6 +9,7 @@ import com.teatro.entities.Pagamento;
 import com.teatro.entities.Sala;
 import com.teatro.entities.Sessao;
 import com.teatro.repositories.BilheteRepository;
+import com.teatro.repositories.LugarRepository;
 import com.teatro.repositories.SessaoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class RelatorioServiceTest {
 
     @Mock
     private SessaoRepository sessaoRepository;
+
+    @Mock
+    private LugarRepository lugarRepository;
 
     @InjectMocks
     private RelatorioService relatorioService;
@@ -72,6 +76,8 @@ class RelatorioServiceTest {
         ));
 
         when(sessaoRepository.findAll()).thenReturn(List.of(sessaoA, sessaoB));
+        when(lugarRepository.countByZonaSalaId(1)).thenReturn(100L);
+        when(lugarRepository.countByZonaSalaId(2)).thenReturn(50L);
 
         RelatorioOcupacaoDto relatorio = relatorioService.gerarRelatorioOcupacao(inicio, fim);
 

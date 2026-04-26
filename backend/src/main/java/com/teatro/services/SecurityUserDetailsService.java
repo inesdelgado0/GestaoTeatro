@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
@@ -20,9 +21,10 @@ public class SecurityUserDetailsService implements UserDetailsService {
     private final UtilizadorRepository utilizadorRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Utilizador utilizador = utilizadorRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Utilizador nao encontrado."));
+                .orElseThrow(() -> new UsernameNotFoundException("Utilizador não encontrado."));
 
         String tipo = utilizador.getTipoUtilizador() != null ? utilizador.getTipoUtilizador().getTipo() : "Cliente";
 

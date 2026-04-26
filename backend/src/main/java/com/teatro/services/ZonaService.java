@@ -2,6 +2,7 @@ package com.teatro.services;
 
 import com.teatro.entities.Zona;
 import com.teatro.repositories.LugarRepository;
+import com.teatro.repositories.SalaRepository;
 import com.teatro.repositories.ZonaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class ZonaService {
 
     private final ZonaRepository zonaRepository;
     private final LugarRepository lugarRepository;
+    private final SalaRepository salaRepository;
 
     public List<Zona> listarTodas() {
         return zonaRepository.findAll();
@@ -36,8 +38,9 @@ public class ZonaService {
 
     public Zona atualizarZona(Integer id, Zona zonaAtualizada) {
         Zona zonaExistente = zonaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Zona nao encontrada."));
+                .orElseThrow(() -> new RuntimeException("Zona não encontrada."));
 
+        zonaAtualizada.setId(id);
         validarZona(zonaAtualizada);
 
         zonaExistente.setNome(zonaAtualizada.getNome());
@@ -49,26 +52,41 @@ public class ZonaService {
 
     public void eliminarZona(Integer id) {
         if (!zonaRepository.existsById(id)) {
-            throw new RuntimeException("Nao e possivel apagar: zona nao encontrada.");
+            throw new RuntimeException("Não é possível apagar: zona não encontrada.");
         }
 
         if (lugarRepository.existsByZonaId(id)) {
-            throw new RuntimeException("Nao e possivel apagar a zona porque existem lugares associados.");
+            throw new RuntimeException("Não é possível apagar a zona porque existem lugares associados.");
         }
         zonaRepository.deleteById(id);
     }
 
     private void validarZona(Zona zona) {
         if (zona.getNome() == null || zona.getNome().isBlank()) {
-            throw new RuntimeException("O nome da zona e obrigatorio.");
+            throw new RuntimeException("O nome da zona é obrigatório.");
         }
 
         if (zona.getSala() == null) {
             throw new RuntimeException("A zona tem de estar associada a uma sala.");
         }
 
-        if (zona.getTaxaAdicional() != null && zona.getTaxaAdicional().compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("A taxa adicional da zona nao pode ser negativa.");
+        if (zona.getSala().getId() == null) {
+            throw new RuntimeException("A zona tem de estar associada a uma sala válida.");
         }
+
+        if (!salaRepository.existsById(zona.getSala().getId())) {
+            throw new RuntimeException("A sala associada à zona não existe.");
+        }
+
+        if (zona.getTaxaAdicional() != null && zona.getTaxaAdicional().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("A taxa adicional da zona não pode ser negativa.");
+        }
+
+        zonaRepository.findBySalaIdAndNomeIgnoreCase(zona.getSala().getId(), zona.getNome())
+                .ifPresent(existente -> {
+                    if (zona.getId() == null || !existente.getId().equals(zona.getId())) {
+                        throw new RuntimeException("Já existe uma zona com esse nome nessa sala.");
+                    }
+                });
     }
 }

@@ -32,7 +32,7 @@ public class TipoBilheteService {
 
     public Tipobilhete atualizarTipoBilhete(Integer id, Tipobilhete tipoBilheteAtualizado) {
         Tipobilhete existente = tipoBilheteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoria de desconto nao encontrada."));
+                .orElseThrow(() -> new RuntimeException("Categoria de desconto não encontrada."));
 
         validarTipoBilhete(tipoBilheteAtualizado, id);
 
@@ -44,11 +44,11 @@ public class TipoBilheteService {
 
     public void eliminarTipoBilhete(Integer id) {
         if (!tipoBilheteRepository.existsById(id)) {
-            throw new RuntimeException("Nao e possivel apagar: categoria de desconto nao encontrada.");
+            throw new RuntimeException("Não é possível apagar: categoria de desconto não encontrada.");
         }
 
         if (lugarBilheteRepository.existsByTipoBilheteId(id)) {
-            throw new RuntimeException("Nao e possivel apagar a categoria porque existem bilhetes associados.");
+            throw new RuntimeException("Não é possível apagar a categoria porque existem bilhetes associados.");
         }
 
         tipoBilheteRepository.deleteById(id);
@@ -56,11 +56,11 @@ public class TipoBilheteService {
 
     private void validarTipoBilhete(Tipobilhete tipoBilhete, Integer idIgnorado) {
         if (tipoBilhete.getNome() == null || tipoBilhete.getNome().isBlank()) {
-            throw new RuntimeException("O nome da categoria e obrigatorio.");
+            throw new RuntimeException("O nome da categoria é obrigatório.");
         }
 
         if (tipoBilhete.getPercentagemDesconto() == null) {
-            throw new RuntimeException("A percentagem de desconto e obrigatoria.");
+            throw new RuntimeException("A percentagem de desconto é obrigatória.");
         }
 
         if (tipoBilhete.getPercentagemDesconto().compareTo(BigDecimal.ZERO) < 0
@@ -71,7 +71,7 @@ public class TipoBilheteService {
         tipoBilheteRepository.findByNomeIgnoreCase(tipoBilhete.getNome())
                 .filter(existente -> !existente.getId().equals(idIgnorado))
                 .ifPresent(existente -> {
-                    throw new RuntimeException("Ja existe uma categoria com esse nome.");
+                    throw new RuntimeException("Já existe uma categoria com esse nome.");
                 });
     }
 }

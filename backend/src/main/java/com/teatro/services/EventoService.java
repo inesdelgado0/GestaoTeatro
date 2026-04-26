@@ -34,11 +34,11 @@ public class EventoService {
 
     public Evento criarEvento(Evento evento) {
         if (evento.getTitulo() == null || evento.getTitulo().isBlank()) {
-            throw new RuntimeException("O titulo do evento nao pode estar vazio.");
+            throw new RuntimeException("O título do evento não pode estar vazio.");
         }
 
         if (eventoRepository.findByTitulo(evento.getTitulo()).isPresent()) {
-            throw new RuntimeException("Ja existe um evento com esse titulo.");
+            throw new RuntimeException("Já existe um evento com esse título.");
         }
 
         return eventoRepository.save(evento);
@@ -46,16 +46,16 @@ public class EventoService {
 
     public Evento atualizarEvento(Integer id, Evento eventoAtualizado) {
         Evento eventoExistente = eventoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento nao encontrado."));
+                .orElseThrow(() -> new RuntimeException("Evento não encontrado."));
 
         if (eventoAtualizado.getTitulo() == null || eventoAtualizado.getTitulo().isBlank()) {
-            throw new RuntimeException("O titulo do evento nao pode estar vazio.");
+            throw new RuntimeException("O título do evento não pode estar vazio.");
         }
 
         eventoRepository.findByTitulo(eventoAtualizado.getTitulo())
                 .filter(outroEvento -> !outroEvento.getId().equals(id))
                 .ifPresent(outroEvento -> {
-                    throw new RuntimeException("Ja existe um evento com esse titulo.");
+                    throw new RuntimeException("Já existe um evento com esse título.");
                 });
 
         eventoExistente.setTitulo(eventoAtualizado.getTitulo());
@@ -69,11 +69,11 @@ public class EventoService {
 
     public void eliminarEvento(Integer id) {
         if (!eventoRepository.existsById(id)) {
-            throw new RuntimeException("Nao e possivel apagar: evento nao encontrado.");
+            throw new RuntimeException("Não é possível apagar: evento não encontrado.");
         }
 
         if (sessaoRepository.existsByEventoId(id)) {
-            throw new RuntimeException("Nao e possivel apagar o evento porque existem sessoes associadas.");
+            throw new RuntimeException("Não é possível apagar o evento porque existem sessões associadas.");
         }
 
         eventoRepository.deleteById(id);

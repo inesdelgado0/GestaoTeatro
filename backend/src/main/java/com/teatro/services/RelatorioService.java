@@ -8,6 +8,7 @@ import com.teatro.entities.Bilhete;
 import com.teatro.entities.EstadoBilhete;
 import com.teatro.entities.Sessao;
 import com.teatro.repositories.BilheteRepository;
+import com.teatro.repositories.LugarRepository;
 import com.teatro.repositories.SessaoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class RelatorioService {
 
     private final BilheteRepository bilheteRepository;
     private final SessaoRepository sessaoRepository;
+    private final LugarRepository lugarRepository;
 
     @Transactional(readOnly = true)
     public RelatorioVendasDto gerarRelatorioVendas(Instant inicio, Instant fim) {
@@ -78,9 +80,13 @@ public class RelatorioService {
         List<RelatorioOcupacaoItemDto> itens = sessaoRepository.findAll().stream()
                 .filter(sessao -> sessao.getDataHora() != null && isBetweenInclusive(sessao.getDataHora(), inicio, fim))
                 .map(sessao -> {
-                    int capacidadeSala = sessao.getSala() != null && sessao.getSala().getCapacidadeTotal() != null
-                            ? sessao.getSala().getCapacidadeTotal()
-                            : 0;
+                    int capacidadeSala = 0;
+                    if (sessao.getSala() != null && sessao.getSala().getId() != null) {
+                        capacidadeSala = (int) lugarRepository.countByZonaSalaId(sessao.getSala().getId());
+                    }
+                    if (capacidadeSala <= 0 && sessao.getSala() != null && sessao.getSala().getCapacidadeTotal() != null) {
+                        capacidadeSala = sessao.getSala().getCapacidadeTotal();
+                    }
 
                     long lugaresOcupados = sessao.getBilhetes().stream()
                             .filter(this::isBilheteAtivoParaOcupacao)
@@ -118,11 +124,11 @@ public class RelatorioService {
 
     private void validarPeriodo(Instant inicio, Instant fim) {
         if (inicio == null || fim == null) {
-            throw new RuntimeException("O periodo do relatorio e obrigatorio.");
+            throw new RuntimeException("O período do relatório é obrigatório.");
         }
 
         if (fim.isBefore(inicio)) {
-            throw new RuntimeException("A data final nao pode ser anterior a data inicial.");
+            throw new RuntimeException("A data final não pode ser anterior à data inicial.");
         }
     }
 

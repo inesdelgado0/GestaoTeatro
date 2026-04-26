@@ -1,11 +1,14 @@
 package com.teatro.repositories;
 
 import com.teatro.entities.Sessao;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SessaoRepository extends JpaRepository<Sessao, Integer> {
@@ -16,8 +19,12 @@ public interface SessaoRepository extends JpaRepository<Sessao, Integer> {
 
     List<Sessao> findBySalaIdAndDataHoraBetween(Integer salaId, Instant inicio, Instant fim);
 
-    boolean existsByEventoId(Integer eventoId);
-}
+    List<Sessao> findBySalaIdOrderByDataHoraAsc(Integer salaId);
 
-//Procura todas as sessões de um determinado evento.
-//Procura sessões de uma determinada sala dentro de um intervalo de tempo.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Sessao> findWithLockById(Integer id);
+
+    boolean existsByEventoId(Integer eventoId);
+
+    boolean existsBySalaId(Integer salaId);
+}

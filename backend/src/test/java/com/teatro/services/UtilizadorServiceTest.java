@@ -15,9 +15,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,7 +59,7 @@ class UtilizadorServiceTest {
     }
 
     @Test
-    void autenticarAdministradorDeveMigrarPasswordAntigaEmTextoSimples() {
+    void autenticarAdministradorDeveRejeitarPasswordEmTextoSimples() {
         Tipoutilizador tipoAdmin = Tipoutilizador.builder().id(1).tipo("Administrador").build();
         Utilizador utilizador = Utilizador.builder()
                 .id(1)
@@ -66,11 +69,11 @@ class UtilizadorServiceTest {
                 .build();
 
         when(utilizadorRepository.findByEmail("admin@teatro.pt")).thenReturn(Optional.of(utilizador));
-        when(utilizadorRepository.save(any(Utilizador.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Utilizador autenticado = utilizadorService.autenticarAdministrador("admin@teatro.pt", "admin123");
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> utilizadorService.autenticarAdministrador("admin@teatro.pt", "admin123"));
 
-        assertTrue(passwordEncoder.matches("admin123", autenticado.getPassword()));
-        verify(utilizadorRepository).save(utilizador);
+        assertEquals("A conta requer reposição segura da password antes de iniciar sessão.", exception.getMessage());
+        verify(utilizadorRepository, never()).save(any(Utilizador.class));
     }
 }

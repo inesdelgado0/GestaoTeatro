@@ -33,29 +33,28 @@ public class UtilizadorService {
 
     public Utilizador autenticarAdministrador(String email, String password) {
         if (email == null || email.isBlank()) {
-            throw new RuntimeException("O email e obrigatorio.");
+            throw new RuntimeException("O email é obrigatório.");
         }
 
         if (password == null || password.isBlank()) {
-            throw new RuntimeException("A password e obrigatoria.");
+            throw new RuntimeException("A password é obrigatória.");
         }
 
         Utilizador utilizador = utilizadorRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Credenciais invalidas."));
-
-        if (!passwordEncoder.matches(password, utilizador.getPassword())) {
-            throw new RuntimeException("Credenciais invalidas.");
-        }
+                .orElseThrow(() -> new RuntimeException("Credenciais inválidas."));
 
         if (!isPasswordHashed(utilizador.getPassword())) {
-            utilizador.setPassword(passwordEncoder.encode(password));
-            utilizadorRepository.save(utilizador);
+            throw new RuntimeException("A conta requer reposição segura da password antes de iniciar sessão.");
+        }
+
+        if (!passwordEncoder.matches(password, utilizador.getPassword())) {
+            throw new RuntimeException("Credenciais inválidas.");
         }
 
         if (utilizador.getTipoUtilizador() == null
                 || utilizador.getTipoUtilizador().getTipo() == null
                 || !utilizador.getTipoUtilizador().getTipo().equalsIgnoreCase("Administrador")) {
-            throw new RuntimeException("O utilizador nao tem permissao administrativa.");
+            throw new RuntimeException("O utilizador não tem permissão administrativa.");
         }
 
         return utilizador;
@@ -63,23 +62,23 @@ public class UtilizadorService {
 
     public Utilizador registarCliente(Utilizador utilizador) {
         if (utilizador.getNome() == null || utilizador.getNome().isBlank()) {
-            throw new RuntimeException("O nome do utilizador e obrigatorio.");
+            throw new RuntimeException("O nome do utilizador é obrigatório.");
         }
 
         if (utilizador.getEmail() == null || utilizador.getEmail().isBlank()) {
-            throw new RuntimeException("O email do utilizador e obrigatorio.");
+            throw new RuntimeException("O email do utilizador é obrigatório.");
         }
 
         if (utilizador.getPassword() == null || utilizador.getPassword().isBlank()) {
-            throw new RuntimeException("A password do utilizador e obrigatoria.");
+            throw new RuntimeException("A password do utilizador é obrigatória.");
         }
 
         if (utilizadorRepository.existsByEmail(utilizador.getEmail())) {
-            throw new RuntimeException("Ja existe um utilizador com esse email.");
+            throw new RuntimeException("Já existe um utilizador com esse email.");
         }
 
         Tipoutilizador tipoCliente = tipoUtilizadorRepository.findByTipoIgnoreCase("Cliente")
-                .orElseThrow(() -> new RuntimeException("Tipo de utilizador 'Cliente' nao encontrado."));
+                .orElseThrow(() -> new RuntimeException("Tipo de utilizador 'Cliente' não encontrado."));
 
         utilizador.setTipoUtilizador(tipoCliente);
         utilizador.setPassword(passwordEncoder.encode(utilizador.getPassword()));

@@ -42,6 +42,22 @@ public class SalaController {
         return ResponseEntity.ok(toResponseDto(salaService.criarSala(sala)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<SalaResponseDto> update(@PathVariable Integer id, @RequestBody SalaRequestDto request) {
+        Sala sala = Sala.builder()
+                .nome(request.nome())
+                .capacidadeTotal(request.capacidadeTotal())
+                .build();
+
+        return ResponseEntity.ok(toResponseDto(salaService.atualizarSala(id, sala)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        salaService.eliminarSala(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private SalaResponseDto toResponseDto(Sala sala) {
         return new SalaResponseDto(
                 sala.getId(),

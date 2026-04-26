@@ -39,7 +39,7 @@ public class LugarService {
 
     public Lugar atualizarLugar(Integer id, Lugar lugarAtualizado) {
         Lugar lugarExistente = lugarRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lugar nao encontrado."));
+                .orElseThrow(() -> new RuntimeException("Lugar não encontrado."));
 
         Zona zona = validarLugar(lugarAtualizado, id);
 
@@ -52,11 +52,11 @@ public class LugarService {
 
     public void eliminarLugar(Integer id) {
         if (!lugarRepository.existsById(id)) {
-            throw new RuntimeException("Nao e possivel apagar: lugar nao encontrado.");
+            throw new RuntimeException("Não é possível apagar: lugar não encontrado.");
         }
 
         if (lugarBilheteRepository.existsByLugarId(id)) {
-            throw new RuntimeException("Nao e possivel apagar o lugar porque existem bilhetes associados.");
+            throw new RuntimeException("Não é possível apagar o lugar porque existem bilhetes associados.");
         }
 
         lugarRepository.deleteById(id);
@@ -68,22 +68,22 @@ public class LugarService {
         }
 
         if (lugar.getZona().getId() == null) {
-            throw new RuntimeException("A zona do lugar tem de ter um identificador valido.");
+            throw new RuntimeException("A zona do lugar tem de ter um identificador válido.");
         }
 
         if (lugar.getFila() == null || lugar.getFila().isBlank()) {
-            throw new RuntimeException("A fila do lugar e obrigatoria.");
+            throw new RuntimeException("A fila do lugar é obrigatória.");
         }
 
         if (lugar.getNumero() == null || lugar.getNumero() <= 0) {
-            throw new RuntimeException("O numero do lugar tem de ser superior a zero.");
+            throw new RuntimeException("O número do lugar tem de ser superior a zero.");
         }
 
         Zona zona = zonaRepository.findById(lugar.getZona().getId())
-                .orElseThrow(() -> new RuntimeException("A zona indicada nao existe."));
+                .orElseThrow(() -> new RuntimeException("A zona indicada não existe."));
 
         if (zona.getSala() == null || zona.getSala().getId() == null) {
-            throw new RuntimeException("A zona indicada nao esta associada a uma sala valida.");
+            throw new RuntimeException("A zona indicada não está associada a uma sala válida.");
         }
 
         if (lugarRepository.findByZonaSalaIdAndFilaAndNumero(
@@ -91,7 +91,7 @@ public class LugarService {
                 lugar.getFila(),
                 lugar.getNumero()
         ).filter(lugarExistente -> !lugarExistente.getId().equals(lugarIdIgnorado)).isPresent()) {
-            throw new RuntimeException("Ja existe um lugar com essa fila e numero nessa sala.");
+            throw new RuntimeException("Já existe um lugar com essa fila e número nessa sala.");
         }
 
         return zona;

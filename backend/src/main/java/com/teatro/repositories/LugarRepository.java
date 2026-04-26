@@ -14,6 +14,7 @@ public interface LugarRepository extends JpaRepository<Lugar, Integer> {
     Optional<Lugar> findByZonaIdAndFilaAndNumero(Integer zonaId, String fila, Integer numero);
     Optional<Lugar> findByZonaSalaIdAndFilaAndNumero(Integer salaId, String fila, Integer numero);
     boolean existsByZonaId(Integer zonaId);
+    long countByZonaSalaId(Integer salaId);
 
 }
 
