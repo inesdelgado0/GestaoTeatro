@@ -8,6 +8,7 @@ import com.teatro.desktop.navigation.SceneManager;
 import com.teatro.desktop.service.AuthService;
 import com.teatro.desktop.service.RelatorioApiService;
 import com.teatro.desktop.view.layout.AdminLayout;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.concurrent.CompletableFuture;
 
 public class ReportsView {
 
@@ -41,6 +43,7 @@ public class ReportsView {
     private final DatePicker fimPicker;
     private final TableView<RelatorioVendasItemModel> vendasTable;
     private final TableView<RelatorioOcupacaoItemModel> ocupacaoTable;
+    private Button aplicarButton;
 
     public ReportsView(SceneManager sceneManager, AuthService authService, String userEmail) {
         this.relatorioApiService = new RelatorioApiService(authService);
@@ -58,8 +61,8 @@ public class ReportsView {
                 authService,
                 userEmail,
                 AdminLayout.SECTION_REPORTS,
-                "Relat\u00f3rios",
-                "Vendas por per\u00edodo e taxa de ocupa\u00e7\u00e3o das sess\u00f5es",
+                "Relatórios",
+                "Vendas por período e taxa de ocupação das sessões",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -89,7 +92,7 @@ public class ReportsView {
         inicioPicker.setPrefWidth(150);
         fimPicker.setPrefWidth(150);
 
-        Button aplicarButton = new Button("Aplicar período");
+        aplicarButton = new Button("Aplicar período");
         aplicarButton.setStyle(
                 "-fx-background-color: linear-gradient(to right, #6ea8ff, #4e8fe8); " +
                         "-fx-text-fill: white; " +
@@ -118,7 +121,7 @@ public class ReportsView {
         metrics.setHgap(18);
         metrics.setVgap(18);
         metrics.add(createMetricCard("Faturação", totalFaturadoLabel, "Total pago no período", "#6ea8ff"), 0, 0);
-        metrics.add(createMetricCard("Bilhetes Pagos", totalBilhetesLabel, "Bilhetes vendidos no período", "#29c58c"), 1, 0);
+        metrics.add(createMetricCard("Bilhetes Pagos", totalBilhetesLabel, "Bilhetes vendidos no periodo", "#29c58c"), 1, 0);
         metrics.add(createMetricCard("Taxa Média", taxaMediaLabel, "Ocupação média das sessões", "#ff9f43"), 2, 0);
         return metrics;
     }
@@ -184,23 +187,48 @@ public class ReportsView {
     }
 
     private void carregarRelatorios() {
+        Instant inicio;
+        Instant fim;
+
         try {
             feedbackLabel.setText("");
-            Instant inicio = toStartOfDay(inicioPicker.getValue());
-            Instant fim = toEndOfDay(fimPicker.getValue());
-
-            RelatorioVendasModel relatorioVendas = relatorioApiService.obterRelatorioVendas(inicio, fim);
-            RelatorioOcupacaoModel relatorioOcupacao = relatorioApiService.obterRelatorioOcupacao(inicio, fim);
-
-            totalFaturadoLabel.setText(formatCurrency(relatorioVendas.totalFaturado()));
-            totalBilhetesLabel.setText(String.valueOf(relatorioVendas.totalBilhetes()));
-            taxaMediaLabel.setText((relatorioOcupacao.taxaMediaOcupacao() != null ? relatorioOcupacao.taxaMediaOcupacao() : BigDecimal.ZERO) + "%");
-
-            vendasTable.getItems().setAll(relatorioVendas.itens());
-            ocupacaoTable.getItems().setAll(relatorioOcupacao.itens());
+            inicio = toStartOfDay(inicioPicker.getValue());
+            fim = toEndOfDay(fimPicker.getValue());
         } catch (RuntimeException e) {
             feedbackLabel.setText(e.getMessage());
+            return;
         }
+
+        aplicarButton.setDisable(true);
+        inicioPicker.setDisable(true);
+        fimPicker.setDisable(true);
+        feedbackLabel.setText("A carregar relatórios...");
+
+        CompletableFuture.supplyAsync(() -> new LoadedReports(
+                relatorioApiService.obterRelatorioVendas(inicio, fim),
+                relatorioApiService.obterRelatorioOcupacao(inicio, fim)
+        )).whenComplete((loadedReports, throwable) -> Platform.runLater(() -> {
+            aplicarButton.setDisable(false);
+            inicioPicker.setDisable(false);
+            fimPicker.setDisable(false);
+
+            if (throwable != null) {
+                String message = throwable.getCause() != null && throwable.getCause().getMessage() != null
+                        ? throwable.getCause().getMessage()
+                        : throwable.getMessage();
+                feedbackLabel.setText(message != null ? message : "Não foi possível obter o relatório.");
+                return;
+            }
+
+            feedbackLabel.setText("");
+            totalFaturadoLabel.setText(formatCurrency(loadedReports.relatorioVendas().totalFaturado()));
+            totalBilhetesLabel.setText(String.valueOf(loadedReports.relatorioVendas().totalBilhetes()));
+            taxaMediaLabel.setText((loadedReports.relatorioOcupacao().taxaMediaOcupacao() != null
+                    ? loadedReports.relatorioOcupacao().taxaMediaOcupacao()
+                    : BigDecimal.ZERO) + "%");
+            vendasTable.getItems().setAll(loadedReports.relatorioVendas().itens());
+            ocupacaoTable.getItems().setAll(loadedReports.relatorioOcupacao().itens());
+        }));
     }
 
     private VBox createMetricCard(String title, Label valueLabel, String description, String accentColor) {
@@ -265,5 +293,11 @@ public class ReportsView {
 
     public Parent getRoot() {
         return root;
+    }
+
+    private record LoadedReports(
+            RelatorioVendasModel relatorioVendas,
+            RelatorioOcupacaoModel relatorioOcupacao
+    ) {
     }
 }

@@ -5,6 +5,7 @@ import com.teatro.desktop.navigation.SceneManager;
 import com.teatro.desktop.service.AuthService;
 import com.teatro.desktop.service.TipoBilheteApiService;
 import com.teatro.desktop.view.layout.AdminLayout;
+import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
@@ -18,16 +19,21 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class PricingView {
 
+    private static final String ERROR_STYLE = "-fx-text-fill: #ff8a8a; -fx-font-size: 12px;";
+    private static final String SUCCESS_STYLE = "-fx-text-fill: #7CFC98; -fx-font-size: 12px;";
+
     private final Parent root;
     private final TableView<TipoBilheteModel> tableView;
     private final TipoBilheteApiService tipoBilheteApiService;
     private final Label feedbackLabel;
+    private final PauseTransition feedbackReset;
     private TipoBilheteModel selectedTipoBilhete;
 
     private TextField nomeField;
@@ -40,15 +46,18 @@ public class PricingView {
         this.tableView = new TableView<>();
         this.tipoBilheteApiService = new TipoBilheteApiService(authService);
         this.feedbackLabel = new Label();
+        this.feedbackReset = new PauseTransition(Duration.seconds(4));
         this.selectedTipoBilhete = null;
+
+        feedbackReset.setOnFinished(event -> clearFeedback());
 
         AdminLayout layout = new AdminLayout(
                 sceneManager,
                 authService,
                 userEmail,
                 AdminLayout.SECTION_PRICING,
-                "Pre\u00e7os e Descontos",
-                "Gest\u00e3o de categorias de bilhete e percentagens de desconto",
+                "Preços e Descontos",
+                "Gestão de categorias de bilhete e percentagens de desconto",
                 buildContent()
         );
         this.root = layout.getRoot();
@@ -69,7 +78,7 @@ public class PricingView {
         );
 
         VBox formCard = buildForm();
-        formCard.setPrefWidth(360);
+        formCard.setPrefWidth(400);
 
         HBox main = new HBox(20, tableCard, formCard);
         HBox.setHgrow(tableCard, Priority.ALWAYS);
@@ -108,9 +117,10 @@ public class PricingView {
         descontoField = new TextField();
         descontoField.setPromptText("Percentagem de desconto");
 
-        feedbackLabel.setStyle("-fx-text-fill: #ff8a8a; -fx-font-size: 12px;");
+        clearFeedback();
 
         saveButton = new Button("Guardar categoria");
+        saveButton.setMaxWidth(Double.MAX_VALUE);
         saveButton.setStyle(
                 "-fx-background-color: #6f2232; " +
                         "-fx-text-fill: white; " +
@@ -119,6 +129,7 @@ public class PricingView {
         );
 
         deleteButton = new Button("Remover categoria");
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
         deleteButton.setDisable(true);
         deleteButton.setStyle(
                 "-fx-background-color: #383838; " +
@@ -128,6 +139,7 @@ public class PricingView {
         );
 
         Button clearButton = new Button("Limpar seleção");
+        clearButton.setMaxWidth(Double.MAX_VALUE);
         clearButton.setStyle(
                 "-fx-background-color: #1f1f1f; " +
                         "-fx-text-fill: white; " +
@@ -135,50 +147,11 @@ public class PricingView {
                         "-fx-padding: 10 18 10 18;"
         );
 
-        saveButton.setOnAction(event -> {
-            try {
-                TipoBilheteModel tipoBilhete = new TipoBilheteModel(
-                        selectedTipoBilhete != null ? selectedTipoBilhete.id() : null,
-                        nomeField.getText(),
-                        new BigDecimal(descontoField.getText())
-                );
-
-                if (selectedTipoBilhete == null) {
-                    tipoBilheteApiService.criarTipoBilhete(tipoBilhete);
-                    feedbackLabel.setText("Categoria criada com sucesso.");
-                } else {
-                    tipoBilheteApiService.atualizarTipoBilhete(tipoBilhete);
-                    feedbackLabel.setText("Categoria atualizada com sucesso.");
-                }
-
-                limparFormulario();
-                carregarTiposBilhete();
-            } catch (NumberFormatException e) {
-                feedbackLabel.setText("A percentagem de desconto deve ser numérica.");
-            } catch (RuntimeException e) {
-                feedbackLabel.setText(e.getMessage());
-            }
-        });
-
-        deleteButton.setOnAction(event -> {
-            if (selectedTipoBilhete == null) {
-                feedbackLabel.setText("Selecione uma categoria para remover.");
-                return;
-            }
-
-            try {
-                tipoBilheteApiService.eliminarTipoBilhete(selectedTipoBilhete.id());
-                feedbackLabel.setText("Categoria removida com sucesso.");
-                limparFormulario();
-                carregarTiposBilhete();
-            } catch (RuntimeException e) {
-                feedbackLabel.setText(e.getMessage());
-            }
-        });
-
+        saveButton.setOnAction(event -> guardarCategoria());
+        deleteButton.setOnAction(event -> eliminarCategoriaSelecionada());
         clearButton.setOnAction(event -> {
             limparFormulario();
-            feedbackLabel.setText("");
+            clearFeedback();
         });
 
         GridPane form = new GridPane();
@@ -190,6 +163,9 @@ public class PricingView {
         form.add(descontoField, 0, 3);
 
         HBox actions = new HBox(10, saveButton, deleteButton);
+        actions.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(saveButton, Priority.ALWAYS);
+        HBox.setHgrow(deleteButton, Priority.ALWAYS);
         VBox formCard = new VBox(14, formTitleLabel, form, actions, clearButton, feedbackLabel);
         formCard.setPadding(new Insets(20));
         formCard.setStyle(
@@ -199,12 +175,54 @@ public class PricingView {
         return formCard;
     }
 
+    private void guardarCategoria() {
+        try {
+            TipoBilheteModel tipoBilhete = new TipoBilheteModel(
+                    selectedTipoBilhete != null ? selectedTipoBilhete.id() : null,
+                    nomeField.getText(),
+                    new BigDecimal(descontoField.getText())
+            );
+
+            String successMessage;
+            if (selectedTipoBilhete == null) {
+                tipoBilheteApiService.criarTipoBilhete(tipoBilhete);
+                successMessage = "Categoria criada com sucesso.";
+            } else {
+                tipoBilheteApiService.atualizarTipoBilhete(tipoBilhete);
+                successMessage = "Categoria atualizada com sucesso.";
+            }
+            limparFormulario();
+            carregarTiposBilhete();
+            showSuccess(successMessage);
+        } catch (NumberFormatException e) {
+            showError("A percentagem de desconto deve ser numérica.");
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
+    }
+
+    private void eliminarCategoriaSelecionada() {
+        if (selectedTipoBilhete == null) {
+            showError("Seleciona uma categoria para remover.");
+            return;
+        }
+
+        try {
+            tipoBilheteApiService.eliminarTipoBilhete(selectedTipoBilhete.id());
+            limparFormulario();
+            carregarTiposBilhete();
+            showSuccess("Categoria removida com sucesso.");
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
+    }
+
     private void carregarTiposBilhete() {
         try {
             List<TipoBilheteModel> tipos = tipoBilheteApiService.listarTiposBilhete();
             tableView.getItems().setAll(tipos);
         } catch (RuntimeException e) {
-            feedbackLabel.setText(e.getMessage());
+            showError(e.getMessage());
         }
     }
 
@@ -216,6 +234,7 @@ public class PricingView {
 
     private void preencherFormulario(TipoBilheteModel tipoBilhete) {
         selectedTipoBilhete = tipoBilhete;
+        clearFeedback();
 
         if (tipoBilhete == null) {
             formTitleLabel.setText("Adicionar Categoria");
@@ -239,6 +258,25 @@ public class PricingView {
         formTitleLabel.setText("Adicionar Categoria");
         saveButton.setText("Guardar categoria");
         deleteButton.setDisable(true);
+    }
+
+    private void showSuccess(String message) {
+        feedbackReset.stop();
+        feedbackLabel.setStyle(SUCCESS_STYLE);
+        feedbackLabel.setText(message);
+        feedbackReset.playFromStart();
+    }
+
+    private void showError(String message) {
+        feedbackReset.stop();
+        feedbackLabel.setStyle(ERROR_STYLE);
+        feedbackLabel.setText(message != null ? message : "Ocorreu um erro.");
+    }
+
+    private void clearFeedback() {
+        feedbackReset.stop();
+        feedbackLabel.setStyle(ERROR_STYLE);
+        feedbackLabel.setText("");
     }
 
     public Parent getRoot() {

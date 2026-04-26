@@ -37,7 +37,7 @@ public class SalaApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter as salas.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter as salas.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);
@@ -59,7 +59,52 @@ public class SalaApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), SalaModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar a sala.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar a sala.", response);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);
+        }
+    }
+
+    public SalaModel atualizarSala(SalaModel sala) {
+        if (sala.id() == null) {
+            throw new RuntimeException("A sala tem de ter identificador para ser atualizada.");
+        }
+
+        try {
+            String json = objectMapper.writeValueAsString(sala);
+
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(ApiConfig.BASE_URL + "/salas/" + sala.id()))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(json));
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return objectMapper.readValue(response.body(), SalaModel.class);
+            }
+            throw ApiErrorHandler.buildException("Não foi possível atualizar a sala.", response);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);
+        }
+    }
+
+    public void eliminarSala(Integer salaId) {
+        try {
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(ApiConfig.BASE_URL + "/salas/" + salaId))
+                    .DELETE();
+            authService.applyAuthentication(requestBuilder);
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return;
+            }
+            throw ApiErrorHandler.buildException("Não foi possível eliminar a sala.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de salas.", e);

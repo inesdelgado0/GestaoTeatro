@@ -14,10 +14,10 @@ final class ApiErrorHandler {
 
     static RuntimeException buildException(String fallbackMessage, HttpResponse<String> response) {
         if (response.statusCode() == 401) {
-            return new RuntimeException("Sem dados dispon\u00edveis de momento.");
+            return new RuntimeException("Sessão expirada ou credenciais inválidas.");
         }
         if (response.statusCode() == 403) {
-            return new RuntimeException("N\u00e3o tens permiss\u00f5es para aceder a esta funcionalidade.");
+            return new RuntimeException("Não tens permissões para aceder a esta funcionalidade.");
         }
 
         String detailedMessage = extractMessage(response.body());

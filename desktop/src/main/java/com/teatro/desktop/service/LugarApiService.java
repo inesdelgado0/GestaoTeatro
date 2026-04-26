@@ -37,7 +37,7 @@ public class LugarApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter os lugares.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter os lugares.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de lugares.", e);
@@ -57,7 +57,7 @@ public class LugarApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter os lugares.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter os lugares.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de lugares.", e);
@@ -78,7 +78,7 @@ public class LugarApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), LugarModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar o lugar.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar o lugar.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de lugares.", e);
@@ -103,7 +103,7 @@ public class LugarApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), LugarModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel atualizar o lugar.", response);
+            throw ApiErrorHandler.buildException("Não foi possível atualizar o lugar.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de lugares.", e);
@@ -122,7 +122,7 @@ public class LugarApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel eliminar o lugar.", response);
+            throw ApiErrorHandler.buildException("Não foi possível eliminar o lugar.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de lugares.", e);

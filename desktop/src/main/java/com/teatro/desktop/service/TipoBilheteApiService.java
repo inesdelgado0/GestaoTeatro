@@ -37,7 +37,7 @@ public class TipoBilheteApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter as categorias de desconto.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter as categorias de desconto.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de tipos de bilhete.", e);
@@ -59,7 +59,7 @@ public class TipoBilheteApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), TipoBilheteModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar a categoria de desconto.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar a categoria de desconto.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de tipos de bilhete.", e);
@@ -85,7 +85,7 @@ public class TipoBilheteApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), TipoBilheteModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel atualizar a categoria de desconto.", response);
+            throw ApiErrorHandler.buildException("Não foi possível atualizar a categoria de desconto.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de tipos de bilhete.", e);
@@ -104,7 +104,7 @@ public class TipoBilheteApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel eliminar a categoria de desconto.", response);
+            throw ApiErrorHandler.buildException("Não foi possível eliminar a categoria de desconto.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de tipos de bilhete.", e);

@@ -39,10 +39,10 @@ public class SessaoApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter as sessoes.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter as sessões.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+            throw new RuntimeException("Erro ao comunicar com o backend de sessões.", e);
         }
     }
 
@@ -61,16 +61,16 @@ public class SessaoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), SessaoModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar a sessao.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar a sessão.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+            throw new RuntimeException("Erro ao comunicar com o backend de sessões.", e);
         }
     }
 
     public SessaoModel atualizarSessao(SessaoModel sessao) {
         if (sessao.id() == null) {
-            throw new RuntimeException("A sessao tem de ter identificador para ser atualizada.");
+            throw new RuntimeException("A sessão tem de ter identificador para ser atualizada.");
         }
 
         try {
@@ -87,10 +87,10 @@ public class SessaoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), SessaoModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel atualizar a sessao.", response);
+            throw ApiErrorHandler.buildException("Não foi possível atualizar a sessão.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+            throw new RuntimeException("Erro ao comunicar com o backend de sessões.", e);
         }
     }
 
@@ -106,10 +106,10 @@ public class SessaoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel eliminar a sessao.", response);
+            throw ApiErrorHandler.buildException("Não foi possível eliminar a sessão.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Erro ao comunicar com o backend de sessoes.", e);
+            throw new RuntimeException("Erro ao comunicar com o backend de sessões.", e);
         }
     }
 }

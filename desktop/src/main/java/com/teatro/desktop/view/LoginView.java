@@ -2,6 +2,7 @@ package com.teatro.desktop.view;
 
 import com.teatro.desktop.navigation.SceneManager;
 import com.teatro.desktop.service.AuthService;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -15,6 +16,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+
+import java.util.concurrent.CompletableFuture;
 
 public class LoginView {
 
@@ -64,13 +67,31 @@ public class LoginView {
         loginButton.setOnAction(event -> {
             String email = emailField.getText();
             String password = passwordField.getText();
+            loginButton.setDisable(true);
+            emailField.setDisable(true);
+            passwordField.setDisable(true);
+            feedbackLabel.setStyle("-fx-text-fill: #7CFC98; -fx-font-size: 12px;");
+            feedbackLabel.setText("A autenticar...");
 
-            if (authService.authenticate(email, password)) {
-                feedbackLabel.setText("");
-                sceneManager.showDashboard(email);
-            } else {
-                feedbackLabel.setText(authService.getLastErrorMessage());
-            }
+            CompletableFuture.supplyAsync(() -> authService.authenticate(email, password))
+                    .whenComplete((authenticated, throwable) -> Platform.runLater(() -> {
+                        loginButton.setDisable(false);
+                        emailField.setDisable(false);
+                        passwordField.setDisable(false);
+                        feedbackLabel.setStyle("-fx-text-fill: #ff9a9a; -fx-font-size: 12px;");
+
+                        if (throwable != null) {
+                            feedbackLabel.setText("Não foi possível comunicar com o backend de autenticação.");
+                            return;
+                        }
+
+                        if (Boolean.TRUE.equals(authenticated)) {
+                            feedbackLabel.setText("");
+                            sceneManager.showDashboard(email);
+                        } else {
+                            feedbackLabel.setText(authService.getLastErrorMessage());
+                        }
+                    }));
         });
 
         VBox fieldsBox = new VBox(14, createFieldBlock("Email", emailField), createFieldBlock("Password", passwordField));

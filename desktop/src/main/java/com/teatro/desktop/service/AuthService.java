@@ -43,11 +43,11 @@ public class AuthService {
                 return true;
             }
 
-            lastErrorMessage = "Credenciais invalidas ou sem permissao administrativa.";
+            lastErrorMessage = "Credenciais inválidas ou sem permissão administrativa.";
             return false;
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            lastErrorMessage = "Nao foi possivel comunicar com o backend de autenticacao.";
+            lastErrorMessage = "Não foi possível comunicar com o backend de autenticação.";
             return false;
         }
     }

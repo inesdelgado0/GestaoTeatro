@@ -37,7 +37,7 @@ public class EventoApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter os eventos.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter os eventos.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de eventos.", e);
@@ -59,7 +59,7 @@ public class EventoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), EventoModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar o evento.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar o evento.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de eventos.", e);
@@ -85,7 +85,7 @@ public class EventoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), EventoModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel atualizar o evento.", response);
+            throw ApiErrorHandler.buildException("Não foi possível atualizar o evento.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de eventos.", e);
@@ -104,7 +104,7 @@ public class EventoApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel eliminar o evento.", response);
+            throw ApiErrorHandler.buildException("Não foi possível eliminar o evento.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de eventos.", e);

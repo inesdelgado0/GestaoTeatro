@@ -37,7 +37,7 @@ public class ZonaApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {
                 });
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter as zonas.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter as zonas.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de zonas.", e);
@@ -58,7 +58,7 @@ public class ZonaApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), ZonaModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel criar a zona.", response);
+            throw ApiErrorHandler.buildException("Não foi possível criar a zona.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de zonas.", e);
@@ -83,7 +83,7 @@ public class ZonaApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), ZonaModel.class);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel atualizar a zona.", response);
+            throw ApiErrorHandler.buildException("Não foi possível atualizar a zona.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de zonas.", e);
@@ -102,7 +102,7 @@ public class ZonaApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return;
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel eliminar a zona.", response);
+            throw ApiErrorHandler.buildException("Não foi possível eliminar a zona.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Erro ao comunicar com o backend de zonas.", e);

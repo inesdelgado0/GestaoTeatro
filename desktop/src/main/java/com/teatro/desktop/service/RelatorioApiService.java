@@ -49,10 +49,10 @@ public class RelatorioApiService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return objectMapper.readValue(response.body(), responseType);
             }
-            throw ApiErrorHandler.buildException("Nao foi possivel obter o relatorio.", response);
+            throw ApiErrorHandler.buildException("Não foi possível obter o relatório.", response);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Erro ao comunicar com o backend de relatorios.", e);
+            throw new RuntimeException("Erro ao comunicar com o backend de relatórios.", e);
         }
     }
 

@@ -21,11 +21,11 @@ public class AdminLayout {
 
     public static final String SECTION_DASHBOARD = "Dashboard";
     public static final String SECTION_EVENTS = "Eventos";
-    public static final String SECTION_SESSIONS = "Sess\u00f5es";
+    public static final String SECTION_SESSIONS = "Sessões";
     public static final String SECTION_ROOMS = "Salas";
     public static final String SECTION_ZONES = "Zonas";
-    public static final String SECTION_PRICING = "Pre\u00e7\u00e1rio";
-    public static final String SECTION_REPORTS = "Relat\u00f3rios";
+    public static final String SECTION_PRICING = "Preçário";
+    public static final String SECTION_REPORTS = "Relatórios";
 
     private final BorderPane root;
 
@@ -71,14 +71,11 @@ public class AdminLayout {
         VBox brandBox = new VBox(10, brandIconContainer, brandTitle, brandSubtitle);
         brandBox.setAlignment(Pos.CENTER);
 
-        Button dashboardButton = createNavButton("\u2302", "P\u00e1gina Inicial", SECTION_DASHBOARD, activeSection);
+        Button dashboardButton = createNavButton("⌂", "Página Inicial", SECTION_DASHBOARD, activeSection);
         dashboardButton.setOnAction(event -> sceneManager.showDashboard(userEmail));
 
         Button eventsButton = createNavButton("\uD83C\uDFAD", "Eventos", SECTION_EVENTS, activeSection);
         eventsButton.setOnAction(event -> sceneManager.showEvents(userEmail));
-
-        Button sessionsButton = createNavButton("\uD83D\uDDD3", "Sess\u00f5es", SECTION_SESSIONS, activeSection);
-        sessionsButton.setOnAction(event -> sceneManager.showSessions(userEmail));
 
         Button roomsButton = createNavButton("\uD83C\uDFDB", "Salas", SECTION_ROOMS, activeSection);
         roomsButton.setOnAction(event -> sceneManager.showRooms(userEmail));
@@ -86,19 +83,22 @@ public class AdminLayout {
         Button zonesButton = createNavButton("\uD83D\uDCBA", "Zonas", SECTION_ZONES, activeSection);
         zonesButton.setOnAction(event -> sceneManager.showZones(userEmail));
 
-        Button pricingButton = createNavButton("\uD83D\uDCB6", "Pre\u00e7\u00e1rio", SECTION_PRICING, activeSection);
+        Button sessionsButton = createNavButton("\uD83D\uDDD3", "Sessões", SECTION_SESSIONS, activeSection);
+        sessionsButton.setOnAction(event -> sceneManager.showSessions(userEmail));
+
+        Button pricingButton = createNavButton("\uD83D\uDCB6", "Preçário", SECTION_PRICING, activeSection);
         pricingButton.setOnAction(event -> sceneManager.showPricing(userEmail));
 
-        Button reportsButton = createNavButton("\uD83D\uDCCA", "Relat\u00f3rios", SECTION_REPORTS, activeSection);
+        Button reportsButton = createNavButton("\uD83D\uDCCA", "Relatórios", SECTION_REPORTS, activeSection);
         reportsButton.setOnAction(event -> sceneManager.showReports(userEmail));
 
         VBox navigation = new VBox(
                 10,
                 dashboardButton,
                 eventsButton,
-                sessionsButton,
                 roomsButton,
                 zonesButton,
+                sessionsButton,
                 pricingButton,
                 reportsButton
         );
@@ -106,7 +106,7 @@ public class AdminLayout {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        Button logoutButton = new Button("Terminar sess\u00e3o");
+        Button logoutButton = new Button("Terminar sessão");
         logoutButton.setMaxWidth(Double.MAX_VALUE);
         logoutButton.setStyle(
                 "-fx-background-color: #dc2626; " +
